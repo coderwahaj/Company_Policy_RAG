@@ -9,8 +9,9 @@ from embeddings.embedder import Embedder
 from vectorstore.faiss_store import FAISSVectorStore
 from llm.groq_llm import GroqLLM
 from reranker.reranker import Reranker
-import spacy
 import numpy as np
+
+
 # =========================
 # NEW: QUERY CLASSIFIER
 # =========================

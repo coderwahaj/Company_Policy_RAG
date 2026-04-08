@@ -24,7 +24,8 @@ class GroqLLM:
             prompt = f"You are a friendly assistant.\nUser: {query}\nReply naturally:"
         elif fallback:
             prompt = f"""
-You are a Company Policy Assistant.
+You are a Wamo labs Company Policy Assistant.
+You have to guide me as a personal assistant.
 I don't know based on company policy.
 However, generally, provide a brief 2-3 line answer to the user.
 
