@@ -5,6 +5,7 @@ from embeddings.embedder import Embedder
 from vectorstore.faiss_store import FAISSVectorStore
 from llm.groq_llm import GroqLLM
 from reranker.reranker import Reranker
+from retriever.bm25_retriever import BM25Retriever
 
 # =========================
 # PAGE CONFIG
@@ -111,6 +112,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # =========================
 # PIPELINE HELPERS
 # =========================
@@ -146,6 +148,22 @@ Rewritten:
     return llm.generate_raw(prompt)
 
 
+# @st.cache_resource(show_spinner=False)
+# def init_pipeline():
+#     policy_docs = load_pdfs_from_directory(
+#         "data/policy", source_name="company_policy", domain="policy"
+#     )
+#     chunked_docs = chunk_documents(policy_docs)
+#     texts = [d["text"] for d in chunked_docs]
+#     metadatas = [d["metadata"] for d in chunked_docs]
+#     embedder = Embedder()
+#     embeddings = embedder.embed_texts(texts)
+#     dimension = len(embeddings[0])
+#     vs = FAISSVectorStore(dimension)
+#     vs.add_embeddings(embeddings, texts, metadatas)
+#     return embedder, vs, GroqLLM(), Reranker(), len(texts)
+
+
 @st.cache_resource(show_spinner=False)
 def init_pipeline():
     policy_docs = load_pdfs_from_directory(
@@ -159,10 +177,11 @@ def init_pipeline():
     dimension = len(embeddings[0])
     vs = FAISSVectorStore(dimension)
     vs.add_embeddings(embeddings, texts, metadatas)
-    return embedder, vs, GroqLLM(), Reranker(), len(texts)
+    bm25 = BM25Retriever(texts)  # ✅ initialize here
+    return embedder, vs, GroqLLM(), Reranker(), bm25, len(texts)
 
 
-def run_rag(query, embedder, vector_store, llm, reranker):
+def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     q_type = classify_query(query, llm)
 
     if q_type == "casual":
@@ -170,12 +189,23 @@ def run_rag(query, embedder, vector_store, llm, reranker):
 
     rewritten_query = rewrite_query(query, llm)
     qe = embedder.embed_query(rewritten_query)
-    results = vector_store.search(qe, k=20, threshold=0.45)
-
-    if not results:
+    # results = vector_store.search(qe, k=20, threshold=0.45)
+    dense_results = vector_store.search(qe, k=20, threshold=0.45)
+    sparse_results = bm25.search(query, k=15)
+    sparse_results_formatted = [
+        {
+            "text": r["text"],
+            "score": r["score"],
+            "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"},
+        }
+        for r in sparse_results
+    ]
+    # Merge + deduplicate
+    combined = dense_results + sparse_results_formatted
+    if not combined:
         return llm.generate(query, fallback=True), [], "", "empty"
 
-    docs = [{"text": r["text"], "metadata": r["metadata"]} for r in results]
+    docs = [{"text": r["text"], "metadata": r["metadata"]} for r in combined]
     reranked = reranker.rerank(query, docs, top_k=5)
     context = "\n\n".join([r["text"] for r in reranked])
     answer = llm.generate(query, context)
@@ -232,7 +262,9 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("**Documents indexed**")
-    for idx, d in enumerate(["📄 communication.pdf", "📄 employment_contract.pdf", "📄 leave_policy.pdf"]):
+    for idx, d in enumerate(
+        ["📄 communication.pdf", "📄 employment_contract.pdf", "📄 leave_policy.pdf"]
+    ):
         st.markdown(f"<small style='color:#4a5a78'>{d}</small>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -283,13 +315,14 @@ with col2:
 # =========================
 import re
 
+
 def truncate_context(context, max_chars=600):
     """Truncate context intelligently at sentence boundaries."""
     if not context:
         return ""
     if len(context) <= max_chars:
         return context
-    sentences = re.split(r'(?<=[.!?]) +', context)
+    sentences = re.split(r"(?<=[.!?]) +", context)
     truncated = ""
     for s in sentences:
         if len(truncated) + len(s) > max_chars:
@@ -309,16 +342,28 @@ if st.session_state.pending_query:
         st.session_state.messages.append({"role": "user", "content": query})
 
         # Retrieve pipeline objects
-        embedder, vector_store, llm, reranker, _ = st.session_state.pipeline_objects
+        embedder, vector_store, llm, reranker, bm25, _ = (
+            st.session_state.pipeline_objects
+        )
 
         with st.spinner("Thinking…"):
-            answer, sources, context_full, status = run_rag(query, embedder, vector_store, llm, reranker)
+            answer, sources, context_full, status = run_rag(
+                query, embedder, vector_store, llm, reranker, bm25
+            )
             context_preview = truncate_context(context_full, 600)
 
         # Define small-talk triggers
         small_talk_triggers = [
-            "hi", "hello", "hey", "good morning", "good afternoon",
-            "good evening", "how are you", "how's your day", "goodbye", "bye"
+            "hi",
+            "hello",
+            "hey",
+            "good morning",
+            "good afternoon",
+            "good evening",
+            "how are you",
+            "how's your day",
+            "goodbye",
+            "bye",
         ]
 
         # Determine response text
@@ -333,21 +378,23 @@ if st.session_state.pending_query:
                 response_text = (
                     "As a Company Policy Assistant, I must inform you that your question "
                     "is not included in the company policy. "
-                    "However, here is a general answer:\n\n" +
-                    llm.generate(query, casual=True)
+                    "However, here is a general answer:\n\n"
+                    + llm.generate(query, casual=True)
                 )
         else:
             # Policy-related answer
             response_text = answer
 
         # Append assistant message
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": response_text,
-            "sources": sources,
-            "context": context_preview,
-            "status": status,
-        })
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": response_text,
+                "sources": sources,
+                "context": context_preview,
+                "status": status,
+            }
+        )
 
 
 # =========================
@@ -382,9 +429,9 @@ for msg in st.session_state.messages:
     # Optionally show sources
     if msg["role"] == "assistant" and msg.get("sources"):
         st.markdown(
-            "<div class='sources-card'>" +
-            "<strong>Sources:</strong><br>" +
-            "<br>".join(msg["sources"]) +
-            "</div>",
+            "<div class='sources-card'>"
+            + "<strong>Sources:</strong><br>"
+            + "<br>".join(msg["sources"])
+            + "</div>",
             unsafe_allow_html=True,
         )

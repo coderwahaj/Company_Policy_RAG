@@ -68,6 +68,7 @@ def run_rag(query, embedder, vector_store, llm, reranker):
 
     # 4. Retrieve relevant docs
     qe = embedder.embed_query(rewritten_query)
+
     results = vector_store.search(qe, k=20, threshold=0.45)
 
     # 5. No results → fallback

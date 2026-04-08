@@ -1,6 +1,10 @@
-from pypdf import PdfReader
-import os
 import re
+import os
+
+# Fix import path — always resolves to project root
+os.sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from pypdf import PdfReader
 
 
 def clean_text(text: str) -> str:
@@ -74,15 +78,17 @@ def load_pdfs_from_directory(directory_path, source_name, domain):
                     if not text.strip() or len(text) < 50:
                         continue
 
-                    documents.append({
-                        "text": text,
-                        "metadata": {
-                            "source": source_name,
-                            "domain": domain,
-                            "doc_type": doc_type,
-                            "file_name": filename,
-                            "page": page_number + 1,
-                        },
-                    })
+                    documents.append(
+                        {
+                            "text": text,
+                            "metadata": {
+                                "source": source_name,
+                                "domain": domain,
+                                "doc_type": doc_type,
+                                "file_name": filename,
+                                "page": page_number + 1,
+                            },
+                        }
+                    )
 
     return documents
