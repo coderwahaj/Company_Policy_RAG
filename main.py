@@ -2,14 +2,15 @@
 main.py — CLI entrypoint for the Company Policy RAG Assistant.
 Run: python main.py
 """
-
-from ingestion.loader import load_pdfs_from_directory
-from processing.chunker import chunk_documents
-from embeddings.embedder import Embedder
-from vectorstore.faiss_store import FAISSVectorStore
-from llm.groq_llm import GroqLLM
-from reranker.reranker import Reranker
 import numpy as np
+from reranker.reranker import Reranker
+from llm import get_llm
+from vectorstore.faiss_store import FAISSVectorStore
+from embeddings.embedder import Embedder
+from processing.chunker import chunk_documents
+from ingestion.loader import load_pdfs_from_directory
+import warnings
+warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
 
 
 # =========================
@@ -95,3 +96,62 @@ def run_rag(query, embedder, vector_store, llm, reranker):
                 seen.add(src)
 
     return answer, sources, context[:800], "ok"
+
+
+def build_pipeline(data_dir="data/policy"):
+    """Create embedder, vector store, llm, reranker pipeline objects."""
+    docs = load_pdfs_from_directory(
+        data_dir, source_name="company_policy", domain="policy")
+    if not docs:
+        print(f"Warning: no PDFs found in {data_dir}")
+
+    chunked = chunk_documents(docs)
+    texts = [d["text"] for d in chunked]
+    metadatas = [d["metadata"] for d in chunked]
+
+    embedder = Embedder()
+    embeddings = embedder.embed_texts(texts) if texts else []
+
+    if embeddings:
+        dimension = len(embeddings[0])
+    else:
+        # fallback dimension (SentenceTransformer default 768)
+        dimension = 768
+
+    vs = FAISSVectorStore(dimension)
+    if embeddings:
+        vs.add_embeddings(embeddings, texts, metadatas)
+
+    llm = get_llm()
+    reranker = Reranker()
+
+    return embedder, vs, llm, reranker
+
+
+def main():
+    print("Initializing pipeline — this may take a minute...")
+    embedder, vs, llm, reranker = build_pipeline()
+
+    print("Pipeline ready. Enter a question (or 'exit' to quit):")
+    try:
+        while True:
+            q = input("? ").strip()
+            if not q:
+                continue
+            if q.lower() in ("exit", "quit"):
+                break
+
+            answer, sources, context, status = run_rag(
+                q, embedder, vs, llm, reranker)
+            print("\nAnswer:\n", answer)
+            if sources:
+                print("\nSources:")
+                for s in sources:
+                    print(" - ", s)
+            print("\n---\n")
+    except KeyboardInterrupt:
+        print("\nExiting")
+
+
+if __name__ == "__main__":
+    main()

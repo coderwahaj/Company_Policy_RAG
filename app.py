@@ -1,9 +1,59 @@
+# ============================================
+# SUPPRESS WARNINGS & LOAD ENV VARIABLES
+# ============================================
+import warnings
+warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
+
+import os
+import logging
+
+
+# CRITICAL: Filter warnings BEFORE importing transformers
+warnings.filterwarnings('ignore', message='.*__path__.*')
+warnings.filterwarnings('ignore', message='.*unauthenticated requests.*')
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+
+# Suppress library logging
+import logging
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+logging.getLogger("PIL").setLevel(logging.ERROR)
+
+# Optional: Suppress Streamlit logging
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '0'
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
+# ============================================
+# AUTHENTICATE WITH HUGGING FACE
+# ============================================
+from huggingface_hub import login
+
+hf_token = os.getenv("HF_TOKEN")
+if hf_token:
+    try:
+        login(token=hf_token, add_to_git_credential=False)
+        print("✅ Hugging Face authenticated successfully")
+    except Exception as e:
+        print(f"⚠️  HF authentication warning: {e}")
+else:
+    print("⚠️  HF_TOKEN not found in .env file")
+
+# ============================================
+# NOW IMPORT STREAMLIT AND OTHER LIBRARIES
+# ============================================
 import streamlit as st
 from ingestion.loader import load_pdfs_from_directory
 from processing.chunker import chunk_documents
 from embeddings.embedder import Embedder
 from vectorstore.faiss_store import FAISSVectorStore
-from llm.groq_llm import GroqLLM
+from llm import get_llm
 from reranker.reranker import Reranker
 from retriever.bm25_retriever import BM25Retriever
 
@@ -148,24 +198,8 @@ Rewritten:
     return llm.generate_raw(prompt)
 
 
-# @st.cache_resource(show_spinner=False)
-# def init_pipeline():
-#     policy_docs = load_pdfs_from_directory(
-#         "data/policy", source_name="company_policy", domain="policy"
-#     )
-#     chunked_docs = chunk_documents(policy_docs)
-#     texts = [d["text"] for d in chunked_docs]
-#     metadatas = [d["metadata"] for d in chunked_docs]
-#     embedder = Embedder()
-#     embeddings = embedder.embed_texts(texts)
-#     dimension = len(embeddings[0])
-#     vs = FAISSVectorStore(dimension)
-#     vs.add_embeddings(embeddings, texts, metadatas)
-#     return embedder, vs, GroqLLM(), Reranker(), len(texts)
-
-
 @st.cache_resource(show_spinner=False)
-def init_pipeline():
+def init_pipeline(provider):
     policy_docs = load_pdfs_from_directory(
         "data/policy", source_name="company_policy", domain="policy"
     )
@@ -178,7 +212,8 @@ def init_pipeline():
     vs = FAISSVectorStore(dimension)
     vs.add_embeddings(embeddings, texts, metadatas)
     bm25 = BM25Retriever(texts)  # ✅ initialize here
-    return embedder, vs, GroqLLM(), Reranker(), bm25, len(texts)
+    llm = get_llm(provider)
+    return embedder, vs, llm, Reranker(), bm25, len(texts)
 
 
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
@@ -239,16 +274,29 @@ if "pipeline_objects" not in st.session_state:
 with st.sidebar:
     st.markdown("### 🏢 Policy Assistant")
     st.markdown("---")
+    st.markdown("### 🤖 LLM Provider")
+    selected_llm = st.selectbox(
+        "Choose model",
+        ["groq", "openai"],
+        index=0
+    )
+    if st.button("🔄 Reset Pipeline"):
+        st.cache_resource.clear()
+        st.session_state.pipeline_ready = False
+        st.session_state.pipeline_objects = None
+        st.rerun()
 
     if not st.session_state.pipeline_ready:
         if st.button("⚡ Load Pipeline", key="load_pipeline", use_container_width=True):
             with st.spinner("Indexing documents…"):
-                st.session_state.pipeline_objects = init_pipeline()
+                st.session_state.pipeline_objects = init_pipeline(selected_llm)
+                st.session_state.selected_llm = selected_llm
                 st.session_state.pipeline_ready = True
-                st.session_state.chunk_count = st.session_state.pipeline_objects[4]
+                st.session_state.chunk_count = st.session_state.pipeline_objects[5]
             st.rerun()
     else:
         st.success("Pipeline ready", icon="✅")
+        st.info(f"Using LLM: {st.session_state.selected_llm.upper()}")
         st.markdown(
             f'<div class="stat-card"><div class="stat-num">{st.session_state.get("chunk_count","—")}</div>'
             f'<div class="stat-lbl">Indexed Chunks</div></div>',
