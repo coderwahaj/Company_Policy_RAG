@@ -19,24 +19,17 @@ def get_llm(provider: str | None = None):
     """
     prov = (provider or os.getenv("LLM_PROVIDER", "groq")).lower()
 
-    if prov in ("openai", "open_ai", "open-api", "open_api"):
-        return get_openai()
-
     if prov in ("groq", "grog"):
         return get_groq()
-
+    if prov in ("gemini", "google"):
+        return get_gemini()
     raise ValueError(f"Unknown LLM provider: {prov}")
-
-
-def get_openai():
-    """Return an OpenAI LLM instance. Reads `OPENAI_API_KEY` or `OPEN_API_KEY` from env/.env."""
-    from .openai_llm import OpenAILLM
-
-    return OpenAILLM()
-
 
 def get_groq():
     """Return a Groq LLM instance."""
     from .groq_llm import GroqLLM
 
     return GroqLLM()
+def get_gemini():
+    from .gemini_llm import GeminiLLM
+    return GeminiLLM()

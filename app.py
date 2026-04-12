@@ -1,11 +1,21 @@
 # ============================================
 # SUPPRESS WARNINGS & LOAD ENV VARIABLES
 # ============================================
+import re
+from retriever.bm25_retriever import BM25Retriever
+from reranker.reranker import Reranker
+from llm import get_llm
+from vectorstore.faiss_store import FAISSVectorStore
+from embeddings.embedder import Embedder
+from processing.chunker import chunk_documents
+from ingestion.loader import load_pdfs_from_directory
+import streamlit as st
+from huggingface_hub import login
+from dotenv import load_dotenv
+import logging
+import os
 import warnings
 warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
-
-import os
-import logging
 
 
 # CRITICAL: Filter warnings BEFORE importing transformers
@@ -16,7 +26,6 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
 
 # Suppress library logging
-import logging
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
@@ -27,15 +36,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '0'
 
 # Load environment variables from .env file
-from dotenv import load_dotenv
 load_dotenv()
 
 # ============================================
 # AUTHENTICATE WITH HUGGING FACE
 # ============================================
-from huggingface_hub import login
 
-hf_token = os.getenv("HF_TOKEN")
+hf_token = os.getenv("HF_API_KEY")
 if hf_token:
     try:
         login(token=hf_token, add_to_git_credential=False)
@@ -48,14 +55,6 @@ else:
 # ============================================
 # NOW IMPORT STREAMLIT AND OTHER LIBRARIES
 # ============================================
-import streamlit as st
-from ingestion.loader import load_pdfs_from_directory
-from processing.chunker import chunk_documents
-from embeddings.embedder import Embedder
-from vectorstore.faiss_store import FAISSVectorStore
-from llm import get_llm
-from reranker.reranker import Reranker
-from retriever.bm25_retriever import BM25Retriever
 
 # =========================
 # PAGE CONFIG
@@ -277,7 +276,7 @@ with st.sidebar:
     st.markdown("### 🤖 LLM Provider")
     selected_llm = st.selectbox(
         "Choose model",
-        ["groq", "openai"],
+        ["groq", "Gemini"],
         index=0
     )
     if st.button("🔄 Reset Pipeline"):
@@ -313,7 +312,8 @@ with st.sidebar:
     for idx, d in enumerate(
         ["📄 communication.pdf", "📄 employment_contract.pdf", "📄 leave_policy.pdf"]
     ):
-        st.markdown(f"<small style='color:#4a5a78'>{d}</small>", unsafe_allow_html=True)
+        st.markdown(
+            f"<small style='color:#4a5a78'>{d}</small>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("**Try asking:**")
@@ -355,13 +355,13 @@ with col1:
         on_change=submit_query,
     )
 with col2:
-    st.button("Send ➤", key="send_btn", use_container_width=True, on_click=submit_query)
+    st.button("Send ➤", key="send_btn",
+              use_container_width=True, on_click=submit_query)
 
 
 # =========================
 # PROCESS QUERY
 # =========================
-import re
 
 
 def truncate_context(context, max_chars=600):
