@@ -28,10 +28,10 @@ class GeminiLLM:
             prompt = f"You are a friendly assistant.\nUser: {query}\nReply naturally:"
         elif fallback:
             prompt = f"""
-You are a Wamo labs Company Policy Assistant.
-You have to guide me as a personal assistant.
-I don't know based on company policy.
-However, generally, provide a brief 2-3 line answer to the user.
+You are a friendly assistant.
+
+Provide a brief (1-3 line) helpful answer to the user's general question.
+Do NOT mention company policy or explain that the question is out of scope.
 
 User: {query}
 """
