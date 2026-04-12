@@ -1,6 +1,7 @@
 # ============================================
 # SUPPRESS WARNINGS & LOAD ENV VARIABLES
 # ============================================
+import pickle
 import re
 from retriever.bm25_retriever import BM25Retriever
 from reranker.reranker import Reranker
@@ -162,26 +163,77 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-import os
-import pickle
 
-PIPELINE_PATH = "vector_store/pipeline.pkl"
-
-
-def save_pipeline(data):
-    os.makedirs("vector_store", exist_ok=True)
-    with open(PIPELINE_PATH, "wb") as f:
-        pickle.dump(data, f)
+PIPELINE_INDEX_FILE = "vector_store/faiss.index"
+PIPELINE_DOCSTORE_FILE = "vector_store/docstore.pkl"
+PIPELINE_MANIFEST = "vector_store/manifest.json"
 
 
-def load_pipeline():
-    if not os.path.exists(PIPELINE_PATH):
+def compute_data_fingerprint(root_dir: str):
+    import hashlib
+
+    h = hashlib.sha1()
+    if not os.path.exists(root_dir):
         return None
-    with open(PIPELINE_PATH, "rb") as f:
-        return pickle.load(f)
+    for dirpath, _, filenames in os.walk(root_dir):
+        for fn in sorted(filenames):
+            fp = os.path.join(dirpath, fn)
+            try:
+                st = os.stat(fp)
+            except OSError:
+                continue
+            h.update(fp.replace("\\", "/").encode())
+            h.update(str(st.st_size).encode())
+            h.update(str(int(st.st_mtime)).encode())
+    return h.hexdigest()
+
+
+def save_pipeline(vs, texts, bm25, chunk_count, data_fingerprint: str):
+    os.makedirs("vector_store", exist_ok=True)
+    # persist faiss index + docstore
+    vs.save(PIPELINE_INDEX_FILE, PIPELINE_DOCSTORE_FILE)
+    # write manifest
+    import json
+
+    manifest = {
+        "fingerprint": data_fingerprint,
+        "chunk_count": chunk_count,
+        "index_file": PIPELINE_INDEX_FILE,
+        "docstore_file": PIPELINE_DOCSTORE_FILE,
+    }
+    with open(PIPELINE_MANIFEST, "w", encoding="utf-8") as f:
+        json.dump(manifest, f)
+
+
+def load_pipeline(data_root="data/policy"):
+    import json
+
+    if not os.path.exists(PIPELINE_MANIFEST):
+        return None
+    with open(PIPELINE_MANIFEST, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    current_fp = compute_data_fingerprint(data_root)
+    if manifest.get("fingerprint") != current_fp:
+        # data changed — force rebuild
+        return None
+
+    # load faiss index and docstore
+    if not os.path.exists(manifest.get("index_file", "")) or not os.path.exists(manifest.get("docstore_file", "")):
+        return None
+
+    vs = FAISSVectorStore.load(
+        manifest["index_file"], manifest["docstore_file"])
+    # bm25 can be rebuilt quickly from texts
+    texts = vs.texts
+    bm25 = BM25Retriever(texts)
+
+    return {"vector_store": vs, "bm25": bm25, "chunk_count": manifest.get("chunk_count", len(texts))}
 # =========================
 # PIPELINE HELPERS
 # =========================
+
+
 def classify_query(query, llm):
     prompt = f"""
 Classify the query into:
@@ -214,17 +266,14 @@ Rewritten:
     return llm.generate_raw(prompt)
 
 
-
 @st.cache_resource(show_spinner=False)
 def init_pipeline(provider):
-
-    # 🔥 STEP 1: Try loading saved pipeline
-    saved = load_pipeline()
+    # 🔥 STEP 1: Try loading saved pipeline manifest + index
+    saved = load_pipeline("data/policy")
 
     if saved:
-        print("✅ Loaded pipeline from disk")
-
-        embedder = saved["embedder"]
+        print("✅ Loaded pipeline from disk (index + docstore)")
+        embedder = Embedder()
         vs = saved["vector_store"]
         bm25 = saved["bm25"]
         chunk_count = saved["chunk_count"]
@@ -233,7 +282,7 @@ def init_pipeline(provider):
 
         return embedder, vs, llm, Reranker(), bm25, chunk_count
 
-    #  STEP 2: Build pipeline if not found
+    #  STEP 2: Build pipeline if not found or data changed
     print("⚡ Building pipeline from scratch...")
 
     policy_docs = load_pdfs_from_directory(
@@ -254,17 +303,14 @@ def init_pipeline(provider):
 
     bm25 = BM25Retriever(texts)
 
-    # 🔥 SAVE EVERYTHING
-    save_pipeline({
-        "embedder": embedder,
-        "vector_store": vs,
-        "bm25": bm25,
-        "chunk_count": len(texts)
-    })
+    # compute fingerprint and persist index + docstore
+    fp = compute_data_fingerprint("data/policy")
+    save_pipeline(vs, texts, bm25, len(texts), fp)
 
     llm = get_llm(provider)
 
     return embedder, vs, llm, Reranker(), bm25, len(texts)
+
 
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     q_type = classify_query(query, llm)

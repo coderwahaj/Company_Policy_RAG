@@ -1,5 +1,7 @@
 import faiss
 import numpy as np
+import pickle
+import os
 
 
 class FAISSVectorStore:
@@ -26,3 +28,32 @@ class FAISSVectorStore:
                 continue
             results.append({"text": self.texts[idx], "metadata": self.metadata[idx]})
         return results
+
+    def save(self, index_path: str, docstore_path: str):
+        os.makedirs(os.path.dirname(index_path) or "./", exist_ok=True)
+        # persist faiss index
+        faiss.write_index(self.index, index_path)
+        # persist texts + metadata
+        with open(docstore_path, "wb") as f:
+            pickle.dump({"texts": self.texts, "metadata": self.metadata}, f)
+
+    @classmethod
+    def load(cls, index_path: str, docstore_path: str):
+        # load faiss index
+        index = faiss.read_index(index_path)
+        # load docstore
+        with open(docstore_path, "rb") as f:
+            data = pickle.load(f)
+
+        # create instance with proper dimension
+        try:
+            dim = index.d
+        except Exception:
+            # fallback: try to infer from index.ntotal and index.reconstruct
+            dim = 0
+
+        inst = cls(dim) if dim > 0 else cls(1)
+        inst.index = index
+        inst.texts = data.get("texts", [])
+        inst.metadata = data.get("metadata", [])
+        return inst
