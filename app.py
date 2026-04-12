@@ -16,7 +16,8 @@ import logging
 import os
 import warnings
 warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
-
+INDEX_PATH = "vector_store/faiss_index"
+DOCSTORE_PATH = "vector_store/docstore.pkl"
 
 # CRITICAL: Filter warnings BEFORE importing transformers
 warnings.filterwarnings('ignore', message='.*__path__.*')
@@ -161,7 +162,23 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+import os
+import pickle
 
+PIPELINE_PATH = "vector_store/pipeline.pkl"
+
+
+def save_pipeline(data):
+    os.makedirs("vector_store", exist_ok=True)
+    with open(PIPELINE_PATH, "wb") as f:
+        pickle.dump(data, f)
+
+
+def load_pipeline():
+    if not os.path.exists(PIPELINE_PATH):
+        return None
+    with open(PIPELINE_PATH, "rb") as f:
+        return pickle.load(f)
 # =========================
 # PIPELINE HELPERS
 # =========================
@@ -197,23 +214,57 @@ Rewritten:
     return llm.generate_raw(prompt)
 
 
+
 @st.cache_resource(show_spinner=False)
 def init_pipeline(provider):
+
+    # 🔥 STEP 1: Try loading saved pipeline
+    saved = load_pipeline()
+
+    if saved:
+        print("✅ Loaded pipeline from disk")
+
+        embedder = saved["embedder"]
+        vs = saved["vector_store"]
+        bm25 = saved["bm25"]
+        chunk_count = saved["chunk_count"]
+
+        llm = get_llm(provider)
+
+        return embedder, vs, llm, Reranker(), bm25, chunk_count
+
+    #  STEP 2: Build pipeline if not found
+    print("⚡ Building pipeline from scratch...")
+
     policy_docs = load_pdfs_from_directory(
         "data/policy", source_name="company_policy", domain="policy"
     )
+
     chunked_docs = chunk_documents(policy_docs)
+
     texts = [d["text"] for d in chunked_docs]
     metadatas = [d["metadata"] for d in chunked_docs]
+
     embedder = Embedder()
     embeddings = embedder.embed_texts(texts)
+
     dimension = len(embeddings[0])
     vs = FAISSVectorStore(dimension)
     vs.add_embeddings(embeddings, texts, metadatas)
-    bm25 = BM25Retriever(texts)  # ✅ initialize here
-    llm = get_llm(provider)
-    return embedder, vs, llm, Reranker(), bm25, len(texts)
 
+    bm25 = BM25Retriever(texts)
+
+    # 🔥 SAVE EVERYTHING
+    save_pipeline({
+        "embedder": embedder,
+        "vector_store": vs,
+        "bm25": bm25,
+        "chunk_count": len(texts)
+    })
+
+    llm = get_llm(provider)
+
+    return embedder, vs, llm, Reranker(), bm25, len(texts)
 
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     q_type = classify_query(query, llm)
@@ -276,11 +327,17 @@ with st.sidebar:
     st.markdown("### 🤖 LLM Provider")
     selected_llm = st.selectbox(
         "Choose model",
-        ["groq", "Gemini"],
+        ["groq", "gemini"],
         index=0
     )
+    import shutil
+
     if st.button("🔄 Reset Pipeline"):
         st.cache_resource.clear()
+
+        if os.path.exists("vector_store"):
+            shutil.rmtree("vector_store")
+
         st.session_state.pipeline_ready = False
         st.session_state.pipeline_objects = None
         st.rerun()
