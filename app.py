@@ -970,6 +970,39 @@ Rewritten:
     return llm.generate_raw(prompt)
 
 
+def summarize_conversation(messages, llm, max_words=120):
+    """Summarize recent messages into a short conversation summary.
+
+    - messages: list of message dicts (role, content)
+    - llm: LLM instance with generate_raw()
+    - returns: short summary string (never None)
+    """
+    if not messages:
+        return ""
+
+    convo_text = "\n".join(
+        [f"{m['role'].capitalize()}: {m['content']}" for m in messages])
+
+    prompt = f"""
+You are a concise conversation summarizer. Produce a short summary (<= {max_words} words)
+capturing the user's intent, any pending questions, and important facts from the exchange. Keep
+the summary neutral and omit irrelevant chit-chat. Present as a single paragraph.
+
+Conversation:
+{convo_text}
+
+Summary:
+"""
+
+    try:
+        s = llm.generate_raw(prompt)
+        if not s:
+            return convo_text[:1000]
+        return s.strip()
+    except Exception:
+        return convo_text[:1000]
+
+
 @st.cache_resource(show_spinner=False)
 def init_pipeline(provider):
     # 🔥 STEP 1: Try loading saved pipeline manifest + index
@@ -1018,8 +1051,15 @@ def init_pipeline(provider):
 
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     """Run RAG pipeline and return (answer, sources, context, status)."""
+    # Build recent conversation summary for LLM awareness
+    msgs = st.session_state.get("messages", [])
+    recent = msgs[-8:] if msgs else []
+    conversation_text = "\n".join([
+        f"{m['role'].capitalize()}: {m['content']}" for m in recent
+    ])
+
     q_type = classify_query(query, llm)
-    
+
     if q_type == "identity":
         return (
             "I'm the Wamo Labs Company Policy Assistant 😊\n"
@@ -1029,19 +1069,20 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
             "",
             "identity",
         )
-    
+
     if q_type == "casual":
-        answer = llm.generate(query, casual=True)
+        # include recent conversation to make replies coherent
+        answer = llm.generate(query, context=conversation_text, casual=True)
         # Ensure answer is never None
         answer = answer or ""
         return answer, [], "", "casual"
-    
+
     rewritten_query = rewrite_query(query, llm)
     qe = embedder.embed_query(rewritten_query)
-    
+
     dense_results = vector_store.search(qe, k=20, threshold=0.45)
     sparse_results = bm25.search(query, k=15)
-    
+
     sparse_results_formatted = [
         {
             "text": r["text"],
@@ -1050,20 +1091,23 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
         }
         for r in sparse_results
     ]
-    
+
     # Merge + deduplicate
     combined = dense_results + sparse_results_formatted
-    
+
     if not combined:
-        answer = llm.generate(query, fallback=True)
+        # pass conversation so fallback replies are contextual
+        answer = llm.generate(query, context=conversation_text, fallback=True)
         answer = answer or ""
         return answer, [], "", "empty"
 
     docs = [{"text": r["text"], "metadata": r["metadata"]} for r in combined]
     reranked = reranker.rerank(query, docs, top_k=5)
     context = "\n\n".join([r["text"] for r in reranked])
-    answer = llm.generate(query, context)
-    
+    # include recent conversation before the retrieved context
+    full_context = (conversation_text + "\n\n" + context).strip()
+    answer = llm.generate(query, full_context)
+
     # ✅ CRITICAL: Ensure answer is a string BEFORE any string operations
     if answer is None:
         answer = ""
@@ -1242,7 +1286,7 @@ if st.session_state.pending_query:
             "context": context_preview,
             "status": status,
         }
-        
+
         # Append to messages REGARDLESS of status
         st.session_state.messages.append(assistant_msg)
 

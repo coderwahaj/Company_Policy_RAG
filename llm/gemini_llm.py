@@ -25,10 +25,21 @@ class GeminiLLM:
 
     def generate(self, query, context="", casual=False, fallback=False):
         if casual:
-            prompt = f"You are a friendly assistant.\nUser: {query}\nReply naturally:"
+            prompt = f"""
+You are a friendly assistant.
+
+Conversation:
+{context}
+
+User: {query}
+Reply naturally:
+"""
         elif fallback:
             prompt = f"""
 You are a friendly assistant.
+
+Conversation:
+{context}
 
 Provide a brief (1-3 line) helpful answer to the user's general question.
 Do NOT mention company policy or explain that the question is out of scope.
