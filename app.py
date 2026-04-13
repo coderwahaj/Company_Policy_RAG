@@ -283,36 +283,79 @@ def init_pipeline(provider):
 # ============================================
 # QUERY HELPERS
 # ============================================
+# def classify_query(query, llm):
+#     query_lower = (query or "").lower().strip()
+
+#     identity_phrases = ["who are you", "what are you", "your name", "tell me about yourself"]
+#     policy_keywords = ["policy", "leave", "employment", "contract", "resign", "resignation",
+#                        "notice period", "salary", "compensation", "commission"]
+#     casual_triggers = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+#                        "how are you", "how's your day", "have a good day", "bye", "goodbye",
+#                        "thanks", "thank you"]
+
+#     if any(p in query_lower for p in identity_phrases):
+#         return "identity"
+#     if any(k in query_lower for k in policy_keywords):
+#         return "policy"
+#     if any(t in query_lower for t in casual_triggers):
+#         return "casual"
+#     if query_lower.startswith(("how to", "how do i", "how do you", "what is", "what's", "how does")):
+#         return "casual"
+
+#     prompt = f"""Classify the query into: casual, policy, or unknown.\nQuery: {query}\nAnswer (one word):"""
+#     try:
+#         result = llm.generate_raw(prompt).lower()
+#     except Exception:
+#         return "unknown"
+#     if "casual" in result:
+#         return "casual"
+#     elif "policy" in result:
+#         return "policy"
+#     return "unknown"
+
 def classify_query(query, llm):
     query_lower = (query or "").lower().strip()
 
     identity_phrases = ["who are you", "what are you", "your name", "tell me about yourself"]
-    policy_keywords = ["policy", "leave", "employment", "contract", "resign", "resignation",
-                       "notice period", "salary", "compensation", "commission"]
-    casual_triggers = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening",
-                       "how are you", "how's your day", "have a good day", "bye", "goodbye",
-                       "thanks", "thank you"]
+
+    policy_keywords = [
+        "policy", "leave", "employment", "contract", "resign", "resignation",
+        "notice period", "salary", "compensation", "commission",
+        "allowance", "communication", "wallet", "slab", "withdrawal", "year 1", "year 2", "year 3"
+    ]
+
+    casual_triggers = [
+        "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+        "how are you", "how's your day", "have a good day", "bye", "goodbye",
+        "thanks", "thank you"
+    ]
 
     if any(p in query_lower for p in identity_phrases):
         return "identity"
+
+    # policy should win before casual
     if any(k in query_lower for k in policy_keywords):
         return "policy"
-    if any(t in query_lower for t in casual_triggers):
-        return "casual"
-    if query_lower.startswith(("how to", "how do i", "how do you", "what is", "what's", "how does")):
+
+    # keep casual only for pure greetings/small talk
+    if any(t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers):
         return "casual"
 
-    prompt = f"""Classify the query into: casual, policy, or unknown.\nQuery: {query}\nAnswer (one word):"""
+    # IMPORTANT: do NOT map "what is/how does" to casual
+    # let LLM classify unknowns
+    prompt = f"""Classify the query into: casual, policy, or unknown.
+Query: {query}
+Answer (one word):"""
     try:
-        result = llm.generate_raw(prompt).lower()
+        result = (llm.generate_raw(prompt) or "").lower().strip()
     except Exception:
         return "unknown"
+
+    if "policy" in result:
+        return "policy"
     if "casual" in result:
         return "casual"
-    elif "policy" in result:
-        return "policy"
     return "unknown"
-
 
 def rewrite_query(query, llm):
     prompt = f"""Rewrite the query using company policy terminology.\nExample: commission → allowance, salary → compensation\nQuery: {query}\nRewritten:"""
@@ -339,7 +382,8 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     conversation_text = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in recent])
 
     q_type = classify_query(query, llm)
-
+    if q_type in ("policy", "unknown"):
+        pass  # continue with retrieval
     if q_type == "identity":
         return (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
@@ -353,7 +397,7 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
 
     rewritten_query = rewrite_query(query, llm)
     qe = embedder.embed_query(rewritten_query)
-    dense_results = vector_store.search(qe, k=20, threshold=0.45)
+    dense_results = vector_store.search(qe, k=20, threshold=0.2)
     sparse_results = bm25.search(query, k=15)
     sparse_results_formatted = [
         {"text": r["text"], "score": r["score"],

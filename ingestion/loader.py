@@ -45,8 +45,11 @@ def clean_text(text: str) -> str:
     # Join back into cleaned text
     cleaned_text = "\n".join(cleaned_lines)
 
-    # Normalize multiple spaces
-    cleaned_text = re.sub(r"\s+", " ", cleaned_text)
+    # preserve newlines; 
+    # normalize spaces per-line
+    cleaned_text = "\n".join(re.sub(r"[ \t]+", " ", ln).strip() for ln in cleaned_lines)
+    # optional: collapse >2 newlines
+    cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
 
     return cleaned_text.strip()
 

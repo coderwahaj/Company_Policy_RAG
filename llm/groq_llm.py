@@ -173,10 +173,13 @@ Assistant:
         else:
             prompt = f"""
 You are Wamo Labs Company Policy Assistant.
-
 - Answer ONLY using the given context
 - Be clear and structured
 - If unsure, say you don't know
+- Return the slab table exactly as percentages”
+- If slab rows are missing, say ‘Not found in the provided policy text’
+- Do not invent numbers
+
 
 Context:
 {context}
