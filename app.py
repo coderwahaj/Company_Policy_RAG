@@ -24,19 +24,19 @@ warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
 INDEX_PATH = "vector_store/faiss_index"
 DOCSTORE_PATH = "vector_store/docstore.pkl"
 
-warnings.filterwarnings('ignore', message='.*__path__.*')
-warnings.filterwarnings('ignore', message='.*unauthenticated requests.*')
-warnings.filterwarnings('ignore', category=DeprecationWarning)
-warnings.filterwarnings('ignore', category=FutureWarning)
-warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+warnings.filterwarnings("ignore", message=".*__path__.*")
+warnings.filterwarnings("ignore", message=".*unauthenticated requests.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '0'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "0"
 
 load_dotenv()
 
@@ -63,8 +63,16 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# =========================
-# CUSTOM CSS
+# THIS MUST BE THE FIRST STREAMLIT COMMAND
+st.set_page_config(
+    page_title="Company Policy Assistant",
+    page_icon="🏢",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ============================================
+# CUSTOM CSS (keep your existing CSS)
 # =========================
 st.markdown("""
 <style>
@@ -79,8 +87,13 @@ html, body, [class*="css"] {
 
 /* ── App background ── */
 .stApp {
-    background: #0d1117;
+    background: #0d1117 !important;
     color: #e6edf3;
+}
+
+/* ── MAIN CONTENT AREA ── */
+[data-testid="stAppViewContainer"] {
+    background: #0d1117 !important;
 }
 
 /* ── Sidebar ── */
@@ -100,6 +113,79 @@ html, body, [class*="css"] {
     background: #30363d !important;
 }
 
+/* ── SELECTBOX / DROPDOWN STYLING ── */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] {
+    background: #21262d !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [role="button"],
+[data-testid="stSidebar"] [data-testid="stSelectbox"] div {
+    background: #21262d !important;
+    border-color: #30363d !important;
+    color: #c9d1d9 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] input {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    color: #c9d1d9 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] svg {
+    color: #c9d1d9 !important;
+}
+
+/* ── CHAT INPUT CONTAINER ── */
+[data-testid="stChatInputContainer"] {
+    background: #161b22 !important;
+    border-top: 1px solid #30363d !important;
+    padding: 12px 16px !important;
+}
+
+/* ── Chat input wrapper ── */
+[data-testid="stChatInputContainer"] > div {
+    background: #161b22 !important;
+}
+
+/* ── Chat input field (textarea) ── */
+[data-testid="stChatInputContainer"] textarea {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    border-radius: 12px !important;
+    color: #e6edf3 !important;
+    font-size: 0.95rem !important;
+    padding: 10px 14px !important;
+    caret-color: #e6edf3 !important;
+    min-height: 44px !important;
+    max-height: 120px !important;
+}
+
+[data-testid="stChatInputContainer"] textarea::placeholder {
+    color: #8b949e !important;
+    opacity: 1 !important;
+}
+
+[data-testid="stChatInputContainer"] textarea:focus {
+    border-color: #388bfd !important;
+    box-shadow: 0 0 0 2px rgba(56,139,253,0.15) !important;
+    background: #21262d !important;
+    outline: none !important;
+}
+
+/* ── Chat input button ── */
+[data-testid="stChatInputContainer"] button {
+    background: #1f6feb !important;
+    border-radius: 8px !important;
+    border: none !important;
+    color: white !important;
+    height: 44px !important;
+}
+
+[data-testid="stChatInputContainer"] button:hover {
+    background: #388bfd !important;
+}
+
+[data-testid="stChatInputContainer"] button:active {
+    background: #1f6feb !important;
+}
+
 /* ── Native chat messages styling ── */
 [data-testid="stChatMessage"] {
     background: transparent !important;
@@ -117,33 +203,6 @@ html, body, [class*="css"] {
     display: inline-block;
     max-width: 80%;
     float: right;
-}
-
-/* ── Chat input (native st.chat_input) ── */
-[data-testid="stChatInputContainer"] {
-    background: #161b22 !important;
-    border-top: 1px solid #30363d !important;
-    padding: 12px 16px !important;
-}
-[data-testid="stChatInputContainer"] textarea {
-    background: #21262d !important;
-    border: 1px solid #30363d !important;
-    border-radius: 12px !important;
-    color: #e6edf3 !important;
-    font-size: 0.95rem !important;
-    padding: 10px 14px !important;
-}
-[data-testid="stChatInputContainer"] textarea:focus {
-    border-color: #388bfd !important;
-    box-shadow: 0 0 0 2px rgba(56,139,253,0.15) !important;
-}
-[data-testid="stChatInputContainer"] button {
-    background: #1f6feb !important;
-    border-radius: 8px !important;
-    border: none !important;
-}
-[data-testid="stChatInputContainer"] button:hover {
-    background: #388bfd !important;
 }
 
 /* ── Source / context expanders ── */
@@ -189,9 +248,18 @@ html, body, [class*="css"] {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+/* ── ADDITIONAL FIXES FOR STREAMLIT COMPONENTS ── */
+[data-testid="stMainBlockContainer"] {
+    background: #0d1117 !important;
+    color: #e6edf3 !important;
+}
+
+.stMarkdown {
+    color: #e6edf3 !important;
+}
 </style>
 """, unsafe_allow_html=True)
-
 
 # ============================================
 # PIPELINE HELPERS
@@ -203,6 +271,7 @@ PIPELINE_MANIFEST = "vector_store/manifest.json"
 
 def compute_data_fingerprint(root_dir: str):
     import hashlib
+
     h = hashlib.sha1()
     if not os.path.exists(root_dir):
         return None
@@ -221,6 +290,7 @@ def compute_data_fingerprint(root_dir: str):
 
 def save_pipeline(vs, texts, bm25, chunk_count, data_fingerprint: str):
     import json
+
     os.makedirs("vector_store", exist_ok=True)
     vs.save(PIPELINE_INDEX_FILE, PIPELINE_DOCSTORE_FILE)
     manifest = {
@@ -235,6 +305,7 @@ def save_pipeline(vs, texts, bm25, chunk_count, data_fingerprint: str):
 
 def load_pipeline(data_root="data/policy"):
     import json
+
     if not os.path.exists(PIPELINE_MANIFEST):
         return None
     with open(PIPELINE_MANIFEST, "r", encoding="utf-8") as f:
@@ -242,13 +313,18 @@ def load_pipeline(data_root="data/policy"):
     current_fp = compute_data_fingerprint(data_root)
     if manifest.get("fingerprint") != current_fp:
         return None
-    if not os.path.exists(manifest.get("index_file", "")) or \
-       not os.path.exists(manifest.get("docstore_file", "")):
+    if not os.path.exists(manifest.get("index_file", "")) or not os.path.exists(
+        manifest.get("docstore_file", "")
+    ):
         return None
     vs = FAISSVectorStore.load(manifest["index_file"], manifest["docstore_file"])
     texts = vs.texts
     bm25 = BM25Retriever(texts)
-    return {"vector_store": vs, "bm25": bm25, "chunk_count": manifest.get("chunk_count", len(texts))}
+    return {
+        "vector_store": vs,
+        "bm25": bm25,
+        "chunk_count": manifest.get("chunk_count", len(texts)),
+    }
 
 
 @st.cache_resource(show_spinner=False)
@@ -264,7 +340,9 @@ def init_pipeline(provider):
         return embedder, vs, llm, Reranker(), bm25, chunk_count
 
     print("⚡ Building pipeline from scratch...")
-    policy_docs = load_pdfs_from_directory("data/policy", source_name="company_policy", domain="policy")
+    policy_docs = load_pdfs_from_directory(
+        "data/policy", source_name="company_policy", domain="policy"
+    )
     chunked_docs = chunk_documents(policy_docs)
     texts = [d["text"] for d in chunked_docs]
     metadatas = [d["metadata"] for d in chunked_docs]
@@ -280,54 +358,51 @@ def init_pipeline(provider):
     return embedder, vs, llm, Reranker(), bm25, len(texts)
 
 
-# ============================================
-# QUERY HELPERS
-# ============================================
-# def classify_query(query, llm):
-#     query_lower = (query or "").lower().strip()
-
-#     identity_phrases = ["who are you", "what are you", "your name", "tell me about yourself"]
-#     policy_keywords = ["policy", "leave", "employment", "contract", "resign", "resignation",
-#                        "notice period", "salary", "compensation", "commission"]
-#     casual_triggers = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening",
-#                        "how are you", "how's your day", "have a good day", "bye", "goodbye",
-#                        "thanks", "thank you"]
-
-#     if any(p in query_lower for p in identity_phrases):
-#         return "identity"
-#     if any(k in query_lower for k in policy_keywords):
-#         return "policy"
-#     if any(t in query_lower for t in casual_triggers):
-#         return "casual"
-#     if query_lower.startswith(("how to", "how do i", "how do you", "what is", "what's", "how does")):
-#         return "casual"
-
-#     prompt = f"""Classify the query into: casual, policy, or unknown.\nQuery: {query}\nAnswer (one word):"""
-#     try:
-#         result = llm.generate_raw(prompt).lower()
-#     except Exception:
-#         return "unknown"
-#     if "casual" in result:
-#         return "casual"
-#     elif "policy" in result:
-#         return "policy"
-#     return "unknown"
-
 def classify_query(query, llm):
     query_lower = (query or "").lower().strip()
 
-    identity_phrases = ["who are you", "what are you", "your name", "tell me about yourself"]
+    identity_phrases = [
+        "who are you",
+        "what are you",
+        "your name",
+        "tell me about yourself",
+    ]
 
     policy_keywords = [
-        "policy", "leave", "employment", "contract", "resign", "resignation",
-        "notice period", "salary", "compensation", "commission",
-        "allowance", "communication", "wallet", "slab", "withdrawal", "year 1", "year 2", "year 3"
+        "policy",
+        "leave",
+        "employment",
+        "contract",
+        "resign",
+        "resignation",
+        "notice period",
+        "salary",
+        "compensation",
+        "commission",
+        "allowance",
+        "communication",
+        "wallet",
+        "slab",
+        "withdrawal",
+        "year 1",
+        "year 2",
+        "year 3",
     ]
 
     casual_triggers = [
-        "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
-        "how are you", "how's your day", "have a good day", "bye", "goodbye",
-        "thanks", "thank you"
+        "hi",
+        "hello",
+        "hey",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "how are you",
+        "how's your day",
+        "have a good day",
+        "bye",
+        "goodbye",
+        "thanks",
+        "thank you",
     ]
 
     if any(p in query_lower for p in identity_phrases):
@@ -338,7 +413,9 @@ def classify_query(query, llm):
         return "policy"
 
     # keep casual only for pure greetings/small talk
-    if any(t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers):
+    if any(
+        t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers
+    ):
         return "casual"
 
     # IMPORTANT: do NOT map "what is/how does" to casual
@@ -356,6 +433,7 @@ Answer (one word):"""
     if "casual" in result:
         return "casual"
     return "unknown"
+
 
 def rewrite_query(query, llm):
     prompt = f"""Rewrite the query using company policy terminology.\nExample: commission → allowance, salary → compensation\nQuery: {query}\nRewritten:"""
@@ -379,7 +457,9 @@ def truncate_context(context, max_chars=600):
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     msgs = st.session_state.get("messages", [])
     recent = msgs[-8:] if msgs else []
-    conversation_text = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in recent])
+    conversation_text = "\n".join(
+        [f"{m['role'].capitalize()}: {m['content']}" for m in recent]
+    )
 
     q_type = classify_query(query, llm)
     if q_type in ("policy", "unknown"):
@@ -388,7 +468,9 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
         return (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
             "I help you understand company policies, benefits, and guidelines. Feel free to ask me anything!",
-            [], "", "identity",
+            [],
+            "",
+            "identity",
         )
 
     if q_type == "casual":
@@ -400,8 +482,11 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     dense_results = vector_store.search(qe, k=20, threshold=0.2)
     sparse_results = bm25.search(query, k=15)
     sparse_results_formatted = [
-        {"text": r["text"], "score": r["score"],
-         "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"}}
+        {
+            "text": r["text"],
+            "score": r["score"],
+            "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"},
+        }
         for r in sparse_results
     ]
     combined = dense_results + sparse_results_formatted
@@ -452,8 +537,9 @@ with st.sidebar:
     st.markdown("---")
 
     st.markdown("### 🤖 Model")
-    selected_llm = st.selectbox("LLM Provider", ["groq", "gemini"], index=0,
-                                label_visibility="collapsed")
+    selected_llm = st.selectbox(
+        "LLM Provider", ["groq", "gemini"], index=0, label_visibility="collapsed"
+    )
 
     st.markdown("---")
 
@@ -495,7 +581,9 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**📁 Indexed documents**")
     for doc in ["communication.pdf", "employment_contract.pdf", "leave_policy.pdf"]:
-        st.markdown(f"<small style='color:#8b949e'>📄 {doc}</small>", unsafe_allow_html=True)
+        st.markdown(
+            f"<small style='color:#8b949e'>📄 {doc}</small>", unsafe_allow_html=True
+        )
 
     st.markdown("---")
     st.markdown("**💡 Try asking:**")
@@ -517,13 +605,16 @@ with st.sidebar:
 
 # Show welcome screen when no messages yet
 if not st.session_state.messages:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="welcome-card">
         <h2>🏢 Company Policy Assistant</h2>
         <p>Ask me anything about company policies, leave, contracts, and benefits.<br>
         Load the pipeline from the sidebar to get started.</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # ── Render all past messages using native Streamlit chat UI ──
 for msg in st.session_state.messages:
@@ -531,7 +622,11 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
         # Show context expander for policy answers
-        if msg["role"] == "assistant" and msg.get("context") and msg.get("status") == "ok":
+        if (
+            msg["role"] == "assistant"
+            and msg.get("context")
+            and msg.get("status") == "ok"
+        ):
             with st.expander("📄 Retrieved context", expanded=False):
                 st.markdown(f"```\n{msg['context']}\n```")
 
@@ -551,15 +646,21 @@ if "_suggestion" in st.session_state:
     else:
         with st.chat_message("user"):
             st.markdown(query)
-        st.session_state.messages.append({
-            "role": "user", "content": query,
-            "time": datetime.now().strftime("%H:%M"),
-        })
-        embedder, vector_store, llm, reranker, bm25, _ = st.session_state.pipeline_objects
+        st.session_state.messages.append(
+            {
+                "role": "user",
+                "content": query,
+                "time": datetime.now().strftime("%H:%M"),
+            }
+        )
+        embedder, vector_store, llm, reranker, bm25, _ = (
+            st.session_state.pipeline_objects
+        )
         with st.chat_message("assistant"):
             with st.spinner("Thinking…"):
                 answer, sources, context_full, status = run_rag(
-                    query, embedder, vector_store, llm, reranker, bm25)
+                    query, embedder, vector_store, llm, reranker, bm25
+                )
                 context_preview = truncate_context(context_full, 600)
             st.markdown(answer)
             if context_preview and status == "ok":
@@ -569,11 +670,16 @@ if "_suggestion" in st.session_state:
                 with st.expander(f"🔗 Sources ({len(sources)})", expanded=False):
                     for src in sources:
                         st.markdown(f"- `{src}`")
-        st.session_state.messages.append({
-            "role": "assistant", "content": answer,
-            "sources": sources, "context": context_preview,
-            "status": status, "time": datetime.now().strftime("%H:%M"),
-        })
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": answer,
+                "sources": sources,
+                "context": context_preview,
+                "status": status,
+                "time": datetime.now().strftime("%H:%M"),
+            }
+        )
 
 
 # ── Native bottom-pinned chat input ──
@@ -590,17 +696,23 @@ if query:
         # Show user message immediately
         with st.chat_message("user"):
             st.markdown(query)
-        st.session_state.messages.append({
-            "role": "user", "content": query,
-            "time": datetime.now().strftime("%H:%M"),
-        })
+        st.session_state.messages.append(
+            {
+                "role": "user",
+                "content": query,
+                "time": datetime.now().strftime("%H:%M"),
+            }
+        )
 
         # Run RAG and stream assistant response
-        embedder, vector_store, llm, reranker, bm25, _ = st.session_state.pipeline_objects
+        embedder, vector_store, llm, reranker, bm25, _ = (
+            st.session_state.pipeline_objects
+        )
         with st.chat_message("assistant"):
             with st.spinner("Thinking…"):
                 answer, sources, context_full, status = run_rag(
-                    query, embedder, vector_store, llm, reranker, bm25)
+                    query, embedder, vector_store, llm, reranker, bm25
+                )
                 context_preview = truncate_context(context_full, 600)
             st.markdown(answer)
             if context_preview and status == "ok":
@@ -612,8 +724,13 @@ if query:
                         st.markdown(f"- `{src}`")
 
         # Save to session state
-        st.session_state.messages.append({
-            "role": "assistant", "content": answer,
-            "sources": sources, "context": context_preview,
-            "status": status, "time": datetime.now().strftime("%H:%M"),
-        })
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": answer,
+                "sources": sources,
+                "context": context_preview,
+                "status": status,
+                "time": datetime.now().strftime("%H:%M"),
+            }
+        )
