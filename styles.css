@@ -5,7 +5,7 @@ html, body, [class*="css"] {
 }
 
 /* ── Hide Streamlit chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 
 /* ── App background ── */
 .stApp {
