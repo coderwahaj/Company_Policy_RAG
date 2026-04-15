@@ -63,19 +63,14 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# THIS MUST BE THE FIRST STREAMLIT COMMAND
-st.set_page_config(
-    page_title="Company Policy Assistant",
-    page_icon="🏢",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+
 def load_css(css_path: str):
     if os.path.exists(css_path):
         with open(css_path, "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     else:
         st.warning(f"CSS file not found: {css_path}")
+
 
 # ============================================
 # CUSTOM CSS (keep your existing CSS)
@@ -179,26 +174,74 @@ def init_pipeline(provider):
     llm = get_llm(provider)
     return embedder, vs, llm, Reranker(), bm25, len(texts)
 
+
 def classify_query(query, llm):
     """Classify query type with improved out-of-context detection."""
     query_lower = (query or "").lower().strip()
 
     identity_phrases = [
-        "who are you", "what are you", "your name", "tell me about yourself",
-        "who is this", "introduce yourself", "what is this"
+        "who are you",
+        "what are you",
+        "your name",
+        "tell me about yourself",
+        "who is this",
+        "introduce yourself",
+        "what is this",
     ]
 
+    # policy_keywords = [
+    #     "policy", "leave", "employment", "contract", "resign", "resignation",
+    #     "notice period", "salary", "compensation", "commission", "allowance",
+    #     "communication", "wallet", "slab", "withdrawal", "year 1", "year 2", "year 3",
+    #     "benefits", "pf", "esi", "bonus", "incentive", "deduction", "payroll"
+    # ]
     policy_keywords = [
-        "policy", "leave", "employment", "contract", "resign", "resignation",
-        "notice period", "salary", "compensation", "commission", "allowance",
-        "communication", "wallet", "slab", "withdrawal", "year 1", "year 2", "year 3",
-        "benefits", "pf", "esi", "bonus", "incentive", "deduction"
+        "policy",
+        "leave",
+        "employment",
+        "contract",
+        "resign",
+        "resignation",
+        "notice period",
+        "salary",
+        "compensation",
+        "commission",
+        "allowance",
+        "communication",
+        "wallet",
+        "slab",
+        "withdrawal",
+        "year 1",
+        "year 2",
+        "year 3",
+        "benefits",
+        "pf",
+        "esi",
+        "bonus",
+        "incentive",
+        "deduction",
+        "wamo labs",
+        "wamo",
+        "company",
     ]
 
     casual_triggers = [
-        "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
-        "how are you", "how's your day", "have a good day", "bye", "goodbye",
-        "thanks", "thank you", "ok", "okay", "sure"
+        "hi",
+        "hello",
+        "hey",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "how are you",
+        "how's your day",
+        "have a good day",
+        "bye",
+        "goodbye",
+        "thanks",
+        "thank you",
+        "ok",
+        "okay",
+        "sure",
     ]
 
     # 🎯 IDENTITY CHECK FIRST
@@ -210,7 +253,9 @@ def classify_query(query, llm):
         return "policy"
 
     # 🎯 CASUAL CHECK - only exact matches or starts with
-    if any(t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers):
+    if any(
+        t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers
+    ):
         return "casual"
 
     # 🎯 UNKNOWN - Let LLM classify with strict instructions
@@ -226,7 +271,7 @@ Examples:
 
 Query: {query}
 Answer (one word only):"""
-    
+
     try:
         result = (llm.generate_raw(prompt) or "").lower().strip()
         if "policy" in result:
@@ -235,8 +280,40 @@ Answer (one word only):"""
             return "casual"
     except Exception:
         pass
-    
+
     return "unknown"  # ✅ Default to unknown for safety
+
+
+def is_generic_out_of_context(answer: str) -> bool:
+    if not answer:
+        return True
+    answer_lower = answer.lower()
+    generic_phrases = [
+        "don't have information",
+        "do not have information",
+        "i don't have information",
+        "i don't know",
+        "out of context",
+        "not in the company policy documents",
+        "not available in the company policy documents",
+    ]
+    return any(p in answer_lower for p in generic_phrases)
+
+
+def answer_from_context(query: str, context: str, llm):
+    prompt = f"""You are a Wamo Labs Company Policy Assistant.
+Use ONLY the retrieved policy text below to answer the user's question.
+Do not refuse if the answer appears in the provided text.
+Do not hallucinate or invent new information.
+
+Question: {query}
+
+Relevant policy text:
+{context}
+
+Answer directly from the retrieved policy text:"""
+    return llm.generate_raw(prompt)
+
 
 def rewrite_query(query, llm):
     prompt = f"""Rewrite the query using company policy terminology.\nExample: commission → allowance, salary → compensation\nQuery: {query}\nRewritten:"""
@@ -256,20 +333,25 @@ def truncate_context(context, max_chars=600):
         truncated += s + " "
     return truncated.strip()
 
+
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     msgs = st.session_state.get("messages", [])
     recent = msgs[-8:] if msgs else []
-    conversation_text = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in recent])
+    conversation_text = "\n".join(
+        [f"{m['role'].capitalize()}: {m['content']}" for m in recent]
+    )
 
     q_type = classify_query(query, llm)
-    
+
     # ✅ IDENTITY: Return confident identity response
     if q_type == "identity":
         return (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
             "I help employees understand company policies, leave policies, employment contracts, compensation, and benefits. "
             "Feel free to ask me anything related to company policies and guidelines!",
-            [], "", "identity",
+            [],
+            "",
+            "identity",
         )
 
     # ✅ CASUAL: Only handle pure greetings
@@ -283,14 +365,19 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     dense_results = vector_store.search(qe, k=20, threshold=0.2)
     sparse_results = bm25.search(query, k=15)
     sparse_results_formatted = [
-        {"text": r["text"], "score": r["score"],
-         "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"}}
+        {
+            "text": r["text"],
+            "score": r["score"],
+            "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"},
+        }
         for r in sparse_results
     ]
     combined = dense_results + sparse_results_formatted
+    docs = [{"text": r["text"], "metadata": r["metadata"]} for r in combined]
+    reranked = reranker.rerank(query, docs, top_k=5)
 
-    # ✅ NO CONTEXT FOUND: Return out-of-context response
-    if not combined:
+    # ✅ NO CONTEXT FOUND: Return out-of-context response FIRST
+    if not reranked:
         return (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
             "I don't have information about that question in the company policy documents. "
@@ -300,12 +387,12 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
             "- Compensation & allowances\n"
             "- Communication guidelines\n\n"
             "Feel free to ask me anything related to company policies!",
-            [], "", "out_of_context"
+            [],
+            "",
+            "out_of_context",
         )
 
     # ✅ CONTEXT FOUND: Use RAG with policy prompt
-    docs = [{"text": r["text"], "metadata": r["metadata"]} for r in combined]
-    reranked = reranker.rerank(query, docs, top_k=5)
     context = "\n\n".join([r["text"] for r in reranked])
     full_context = (conversation_text + "\n\n" + context).strip()
     answer = llm.generate(query, full_context)
@@ -316,14 +403,14 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
         answer = str(answer)
 
     sources, seen = [], set()
-    if "i don't know" not in answer.lower() and "out of context" not in answer.lower():
-        for r in reranked:
-            src = f"{r['metadata']['file_name']} — Page {r['metadata']['page']}"
-            if src not in seen:
-                sources.append(src)
-                seen.add(src)
+    for r in reranked:
+        src = f"{r['metadata']['file_name']} — Page {r['metadata']['page']}"
+        if src not in seen:
+            sources.append(src)
+            seen.add(src)
 
     return answer, sources, context[:800], "ok"
+
 
 # ============================================
 # SESSION STATE
