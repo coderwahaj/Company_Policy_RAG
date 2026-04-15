@@ -1,87 +1,5 @@
-# from groq import Groq
-# import os
-
-# # =========================
-# # GroqLLM
-# # =========================
-
-
-# class GroqLLM:
-#     def __init__(self):
-#         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-#     # Raw generation (classifier / rewrite)
-#     def generate_raw(self, prompt):
-#         response = self.client.chat.completions.create(
-#             model="llama-3.3-70b-versatile",
-#             messages=[{"role": "user", "content": prompt}],
-#             temperature=0,
-#             max_tokens=100,
-#         )
-#         return response.choices[0].message.content.strip()
-
-#     def generate(self, query, context="", casual=False, fallback=False):
-
-#         if casual:
-#             prompt = f"""
-#     You are a friendly, natural conversational policy assistant.
-
-#     - Be warm, human-like, and engaging
-#     - Keep replies short (2–3 lines)
-#     - Do NOT mention company policy
-#     - Respond naturally like a real person
-
-#     User: {query}
-#     Assistant:
-#     """
-
-#         elif fallback:
-#             prompt = f"""
-#     You are a friendly, natural conversational assistant.
-
-#     - Be warm and human-like
-#     - Keep replies short (1–3 lines)
-#     - Answer the user's question naturally without mentioning company policy
-
-#     User: {query}
-#     Assistant:
-#     """
-
-#         else:
-#             prompt = f"""
-#     You are Wamo Labs Company Policy Assistant.
-
-#     - Answer ONLY using the given context
-#     - Be clear and structured
-#     - If unsure, say you don't know
-
-#     Context:
-#     {context}
-
-#     User: {query}
-#     Assistant:
-#     """
-
-#         # Send the prompt to the Groq chat completion endpoint and return text
-#         try:
-#             response = self.client.chat.completions.create(
-#                 model="llama-3.3-70b-versatile",
-#                 messages=[{"role": "user", "content": prompt}],
-#                 temperature=0.3,
-#                 max_tokens=300,
-#             )
-#             return response.choices[0].message.content.strip()
-#         except Exception:
-#             return ""
-
-
 from groq import Groq
 import os
-
-
-# =========================
-# GroqLLM
-# =========================
 
 
 class GroqLLM:
@@ -91,13 +9,8 @@ class GroqLLM:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         self.client = Groq(api_key=api_key)
 
-    # Raw generation (classifier / rewrite)
     def generate_raw(self, prompt):
-        """Generate raw response for classification/rewrite tasks.
-
-        Returns:
-            str: Generated text (never None)
-        """
+        """Generate raw response for classification/rewrite tasks."""
         try:
             response = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -105,126 +18,79 @@ class GroqLLM:
                 temperature=0,
                 max_tokens=100,
             )
-
-            # ✅ Guard against None at each step
-            if response is None:
+            if response is None or not response.choices:
                 return ""
-            if response.choices is None or len(response.choices) == 0:
-                return ""
-
-            message = response.choices[0].message
-            if message is None:
-                return ""
-
-            content = message.content
-            if content is None:
-                return ""
-
-            return content.strip()
-
+            return (
+                response.choices[0].message.content.strip()
+                if response.choices[0].message
+                else ""
+            )
         except Exception as e:
             print(f"⚠️ Error in generate_raw: {e}")
             return ""
 
     def generate(self, query, context="", casual=False, fallback=False):
-        """Generate response for user query.
-
-        Args:
-            query: User's question
-            context: Policy context (for policy mode)
-            casual: Generate casual response (ignore context)
-            fallback: Generate fallback response when no context found
-
-        Returns:
-            str: Generated text (never None, returns "" on error)
-        """
+        """Generate response for user query."""
 
         if casual:
-            prompt = f"""
-You are a friendly, natural conversational policy assistant.
+            prompt = f"""You are a friendly assistant handling casual greetings.
 
-- Be warm, human-like, and engaging
-- Keep replies short (2–3 lines)
-- Do NOT mention company policy
-- Respond naturally like a real person
-
-Conversation:
-{context}
+RULES:
+- Be warm and brief (1–2 lines)
+- Only respond to: greetings, thanks, farewells
+- Do NOT try to answer questions
+- Respond naturally
 
 User: {query}
-Assistant:
-"""
+Assistant:"""
 
         elif fallback:
-            prompt = f"""
-You are a friendly, natural conversational assistant.
+            # ✅ SHOULD NEVER BE CALLED - but if it does, refuse everything
+            prompt = f"""You are Wamo Labs Policy Assistant.
 
-- Be warm and human-like
-- Keep replies short (1–3 lines)
-- Answer the user's question naturally without mentioning company policy
-
-Conversation:
-{context}
+STRICT RULE: This is a fallback - always refuse and redirect.
+Say EXACTLY: "I'm the Wamo Labs Company Policy Assistant. I don't have information about that in the policy documents. I can help with: leave policies, employment contracts, compensation, and benefits."
 
 User: {query}
-Assistant:
-"""
+Assistant:"""
 
         else:
-            prompt = f"""
-You are Wamo Labs Company Policy Assistant.
-- Answer ONLY using the given context
-- Be clear and structured
-- If unsure, say you don't know
-- Return the slab table exactly as percentages”
-- If slab rows are missing, say ‘Not found in the provided policy text’
-- Do not invent numbers
+            # ✅ MAIN POLICY PROMPT - EXTREMELY STRICT
+            prompt = f"""You are Wamo Labs Company Policy Assistant. YOUR ONLY JOB IS TO ANSWER POLICY QUESTIONS.
 
+⚠️ CRITICAL RULES (FOLLOW EXACTLY):
+1. Answer ONLY if the information is in the context
+2. If the user asks about ANY non-policy topic (Python, sports, history, etc.), REFUSE
+3. Say EXACTLY: "I'm the Wamo Labs Company Policy Assistant. I don't have information about that in the policy documents. I can help with: leave policies, employment contracts, compensation, and benefits."
+4. Do NOT answer general knowledge questions under any circumstances
+5. Do NOT hallucinate or invent information
+6. If a slab/table is mentioned but missing, say: "Not found in the provided policy text"
+7. Be structured and clear
 
-Context:
+CONTEXT (ONLY use this):
 {context}
 
-User: {query}
-Assistant:
-"""
+User Question: {query}
+Assistant:"""
 
-        # Send the prompt to the Groq chat completion endpoint
         try:
             response = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
+                temperature=0.1,  # ✅ VERY LOW - near-deterministic
                 max_tokens=300,
             )
 
-            # ✅ CRITICAL: Guard against None at each step
-            if response is None:
-                print("⚠️ API returned None response")
+            if response is None or not response.choices:
                 return ""
 
-            if response.choices is None or len(response.choices) == 0:
-                print("⚠️ API returned empty choices")
-                return ""
-
-            message = response.choices[0].message
-            if message is None:
-                print("⚠️ API returned None message")
-                return ""
-
-            content = message.content
-            if content is None:
-                print("⚠️ API returned None content")
-                return ""
-
-            result = content.strip()
-
-            # ✅ Defensive: ensure result is a string
-            if not isinstance(result, str):
-                print(f"⚠️ Unexpected content type: {type(result)}")
-                return ""
-
-            return result
+            content = (
+                response.choices[0].message.content
+                if response.choices[0].message
+                else ""
+            )
+            return content.strip() if content else ""
 
         except Exception as e:
-            print(f"⚠️ Error in generate: {type(e).__name__}: {e}")
+            print(f"⚠️ Error in generate: {e}")
             return ""

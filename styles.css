@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Hide Streamlit chrome ── */
+#MainMenu, footer, header { visibility: hidden; }
+
+/* ── App background ── */
+.stApp {
+    background: #0d1117 !important;
+    color: #e6edf3;
+}
+
+/* ── MAIN CONTENT AREA ── */
+[data-testid="stAppViewContainer"] {
+    background: #0d1117 !important;
+}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: #161b22 !important;
+    border-right: 1px solid #30363d;
+}
+[data-testid="stSidebar"] * { color: #c9d1d9 !important; }
+[data-testid="stSidebar"] .stButton > button {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    color: #c9d1d9 !important;
+    border-radius: 8px !important;
+    transition: background 0.15s;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: #30363d !important;
+}
+
+/* ── SELECTBOX / DROPDOWN STYLING ── */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] {
+    background: #21262d !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] [role="button"],
+[data-testid="stSidebar"] [data-testid="stSelectbox"] div {
+    background: #21262d !important;
+    border-color: #30363d !important;
+    color: #c9d1d9 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] input {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    color: #c9d1d9 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] svg {
+    color: #c9d1d9 !important;
+}
+
+/* ── CHAT INPUT CONTAINER ── */
+[data-testid="stChatInputContainer"] {
+    background: #161b22 !important;
+    border-top: 1px solid #30363d !important;
+    padding: 12px 16px !important;
+}
+
+/* ── Chat input wrapper ── */
+[data-testid="stChatInputContainer"] > div {
+    background: #161b22 !important;
+}
+
+/* ── Chat input field (textarea) ── */
+[data-testid="stChatInputContainer"] textarea {
+    background: #21262d !important;
+    border: 1px solid #30363d !important;
+    border-radius: 12px !important;
+    color: #e6edf3 !important;
+    font-size: 0.95rem !important;
+    padding: 10px 14px !important;
+    caret-color: #e6edf3 !important;
+    min-height: 44px !important;
+    max-height: 120px !important;
+}
+
+[data-testid="stChatInputContainer"] textarea::placeholder {
+    color: #8b949e !important;
+    opacity: 1 !important;
+}
+
+[data-testid="stChatInputContainer"] textarea:focus {
+    border-color: #388bfd !important;
+    box-shadow: 0 0 0 2px rgba(56,139,253,0.15) !important;
+    background: #21262d !important;
+    outline: none !important;
+}
+
+/* ── Chat input button ── */
+[data-testid="stChatInputContainer"] button {
+    background: #1f6feb !important;
+    border-radius: 8px !important;
+    border: none !important;
+    color: white !important;
+    height: 44px !important;
+}
+
+[data-testid="stChatInputContainer"] button:hover {
+    background: #388bfd !important;
+}
+
+[data-testid="stChatInputContainer"] button:active {
+    background: #1f6feb !important;
+}
+
+/* ── Native chat messages styling ── */
+[data-testid="stChatMessage"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0.25rem 0 !important;
+}
+
+/* User bubble */
+[data-testid="stChatMessage"][data-testid*="user"] [data-testid="stMarkdownContainer"] p,
+.stChatMessage:has([aria-label="user avatar"]) [data-testid="stMarkdownContainer"] p {
+    background: #1c2d3a;
+    border: 1px solid #264f6b;
+    border-radius: 14px 14px 4px 14px;
+    padding: 10px 14px;
+    display: inline-block;
+    max-width: 80%;
+    float: right;
+}
+
+/* ── Source / context expanders ── */
+.stExpander {
+    background: #161b22 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 8px !important;
+    margin-top: 4px;
+}
+.stExpander summary { color: #8b949e !important; font-size: 0.8rem; }
+.stExpander [data-testid="stMarkdownContainer"] {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: #8b949e;
+}
+
+/* ── Welcome card ── */
+.welcome-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin: 40px auto;
+    max-width: 560px;
+    text-align: center;
+}
+.welcome-card h2 { color: #e6edf3; font-size: 1.3rem; margin-bottom: 6px; }
+.welcome-card p  { color: #8b949e; font-size: 0.9rem; margin: 0; }
+
+/* ── Stat pill ── */
+.stat-pill {
+    display: inline-block;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    color: #8b949e;
+    margin: 2px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+/* ── ADDITIONAL FIXES FOR STREAMLIT COMPONENTS ── */
+[data-testid="stMainBlockContainer"] {
+    background: #0d1117 !important;
+    color: #e6edf3 !important;
+}
+
+.stMarkdown {
+    color: #e6edf3 !important;
+}

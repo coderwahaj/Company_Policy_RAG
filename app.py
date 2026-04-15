@@ -70,196 +70,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+def load_css(css_path: str):
+    if os.path.exists(css_path):
+        with open(css_path, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        st.warning(f"CSS file not found: {css_path}")
 
 # ============================================
 # CUSTOM CSS (keep your existing CSS)
-# =========================
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+# =========================================
+load_css("styles.css")
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
-
-/* ── Hide Streamlit chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
-
-/* ── App background ── */
-.stApp {
-    background: #0d1117 !important;
-    color: #e6edf3;
-}
-
-/* ── MAIN CONTENT AREA ── */
-[data-testid="stAppViewContainer"] {
-    background: #0d1117 !important;
-}
-
-/* ── Sidebar ── */
-[data-testid="stSidebar"] {
-    background: #161b22 !important;
-    border-right: 1px solid #30363d;
-}
-[data-testid="stSidebar"] * { color: #c9d1d9 !important; }
-[data-testid="stSidebar"] .stButton > button {
-    background: #21262d !important;
-    border: 1px solid #30363d !important;
-    color: #c9d1d9 !important;
-    border-radius: 8px !important;
-    transition: background 0.15s;
-}
-[data-testid="stSidebar"] .stButton > button:hover {
-    background: #30363d !important;
-}
-
-/* ── SELECTBOX / DROPDOWN STYLING ── */
-[data-testid="stSidebar"] [data-testid="stSelectbox"] {
-    background: #21262d !important;
-}
-[data-testid="stSidebar"] [data-testid="stSelectbox"] [role="button"],
-[data-testid="stSidebar"] [data-testid="stSelectbox"] div {
-    background: #21262d !important;
-    border-color: #30363d !important;
-    color: #c9d1d9 !important;
-}
-[data-testid="stSidebar"] [data-testid="stSelectbox"] input {
-    background: #21262d !important;
-    border: 1px solid #30363d !important;
-    color: #c9d1d9 !important;
-}
-[data-testid="stSidebar"] [data-testid="stSelectbox"] svg {
-    color: #c9d1d9 !important;
-}
-
-/* ── CHAT INPUT CONTAINER ── */
-[data-testid="stChatInputContainer"] {
-    background: #161b22 !important;
-    border-top: 1px solid #30363d !important;
-    padding: 12px 16px !important;
-}
-
-/* ── Chat input wrapper ── */
-[data-testid="stChatInputContainer"] > div {
-    background: #161b22 !important;
-}
-
-/* ── Chat input field (textarea) ── */
-[data-testid="stChatInputContainer"] textarea {
-    background: #21262d !important;
-    border: 1px solid #30363d !important;
-    border-radius: 12px !important;
-    color: #e6edf3 !important;
-    font-size: 0.95rem !important;
-    padding: 10px 14px !important;
-    caret-color: #e6edf3 !important;
-    min-height: 44px !important;
-    max-height: 120px !important;
-}
-
-[data-testid="stChatInputContainer"] textarea::placeholder {
-    color: #8b949e !important;
-    opacity: 1 !important;
-}
-
-[data-testid="stChatInputContainer"] textarea:focus {
-    border-color: #388bfd !important;
-    box-shadow: 0 0 0 2px rgba(56,139,253,0.15) !important;
-    background: #21262d !important;
-    outline: none !important;
-}
-
-/* ── Chat input button ── */
-[data-testid="stChatInputContainer"] button {
-    background: #1f6feb !important;
-    border-radius: 8px !important;
-    border: none !important;
-    color: white !important;
-    height: 44px !important;
-}
-
-[data-testid="stChatInputContainer"] button:hover {
-    background: #388bfd !important;
-}
-
-[data-testid="stChatInputContainer"] button:active {
-    background: #1f6feb !important;
-}
-
-/* ── Native chat messages styling ── */
-[data-testid="stChatMessage"] {
-    background: transparent !important;
-    border: none !important;
-    padding: 0.25rem 0 !important;
-}
-
-/* User bubble */
-[data-testid="stChatMessage"][data-testid*="user"] [data-testid="stMarkdownContainer"] p,
-.stChatMessage:has([aria-label="user avatar"]) [data-testid="stMarkdownContainer"] p {
-    background: #1c2d3a;
-    border: 1px solid #264f6b;
-    border-radius: 14px 14px 4px 14px;
-    padding: 10px 14px;
-    display: inline-block;
-    max-width: 80%;
-    float: right;
-}
-
-/* ── Source / context expanders ── */
-.stExpander {
-    background: #161b22 !important;
-    border: 1px solid #30363d !important;
-    border-radius: 8px !important;
-    margin-top: 4px;
-}
-.stExpander summary { color: #8b949e !important; font-size: 0.8rem; }
-.stExpander [data-testid="stMarkdownContainer"] {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    color: #8b949e;
-}
-
-/* ── Welcome card ── */
-.welcome-card {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 12px;
-    padding: 24px 28px;
-    margin: 40px auto;
-    max-width: 560px;
-    text-align: center;
-}
-.welcome-card h2 { color: #e6edf3; font-size: 1.3rem; margin-bottom: 6px; }
-.welcome-card p  { color: #8b949e; font-size: 0.9rem; margin: 0; }
-
-/* ── Stat pill ── */
-.stat-pill {
-    display: inline-block;
-    background: #21262d;
-    border: 1px solid #30363d;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 0.78rem;
-    color: #8b949e;
-    margin: 2px;
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-
-/* ── ADDITIONAL FIXES FOR STREAMLIT COMPONENTS ── */
-[data-testid="stMainBlockContainer"] {
-    background: #0d1117 !important;
-    color: #e6edf3 !important;
-}
-
-.stMarkdown {
-    color: #e6edf3 !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ============================================
 # PIPELINE HELPERS
@@ -357,83 +179,64 @@ def init_pipeline(provider):
     llm = get_llm(provider)
     return embedder, vs, llm, Reranker(), bm25, len(texts)
 
-
 def classify_query(query, llm):
+    """Classify query type with improved out-of-context detection."""
     query_lower = (query or "").lower().strip()
 
     identity_phrases = [
-        "who are you",
-        "what are you",
-        "your name",
-        "tell me about yourself",
+        "who are you", "what are you", "your name", "tell me about yourself",
+        "who is this", "introduce yourself", "what is this"
     ]
 
     policy_keywords = [
-        "policy",
-        "leave",
-        "employment",
-        "contract",
-        "resign",
-        "resignation",
-        "notice period",
-        "salary",
-        "compensation",
-        "commission",
-        "allowance",
-        "communication",
-        "wallet",
-        "slab",
-        "withdrawal",
-        "year 1",
-        "year 2",
-        "year 3",
+        "policy", "leave", "employment", "contract", "resign", "resignation",
+        "notice period", "salary", "compensation", "commission", "allowance",
+        "communication", "wallet", "slab", "withdrawal", "year 1", "year 2", "year 3",
+        "benefits", "pf", "esi", "bonus", "incentive", "deduction"
     ]
 
     casual_triggers = [
-        "hi",
-        "hello",
-        "hey",
-        "good morning",
-        "good afternoon",
-        "good evening",
-        "how are you",
-        "how's your day",
-        "have a good day",
-        "bye",
-        "goodbye",
-        "thanks",
-        "thank you",
+        "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+        "how are you", "how's your day", "have a good day", "bye", "goodbye",
+        "thanks", "thank you", "ok", "okay", "sure"
     ]
 
+    # 🎯 IDENTITY CHECK FIRST
     if any(p in query_lower for p in identity_phrases):
         return "identity"
 
-    # policy should win before casual
+    # 🎯 POLICY CHECK - should win
     if any(k in query_lower for k in policy_keywords):
         return "policy"
 
-    # keep casual only for pure greetings/small talk
-    if any(
-        t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers
-    ):
+    # 🎯 CASUAL CHECK - only exact matches or starts with
+    if any(t == query_lower or query_lower.startswith(t + " ") for t in casual_triggers):
         return "casual"
 
-    # IMPORTANT: do NOT map "what is/how does" to casual
-    # let LLM classify unknowns
-    prompt = f"""Classify the query into: casual, policy, or unknown.
+    # 🎯 UNKNOWN - Let LLM classify with strict instructions
+    prompt = f"""Classify STRICTLY into: policy, casual, or unknown.
+    
+⚠️ RULE: If question is NOT about company policy (leave, contracts, salary, benefits, etc.), answer "unknown"
+    
+Examples:
+- "What is Python?" → unknown
+- "How many leave days?" → policy
+- "Hi there" → casual
+- "Tell me about machine learning" → unknown
+
 Query: {query}
-Answer (one word):"""
+Answer (one word only):"""
+    
     try:
         result = (llm.generate_raw(prompt) or "").lower().strip()
+        if "policy" in result:
+            return "policy"
+        if "casual" in result:
+            return "casual"
     except Exception:
-        return "unknown"
-
-    if "policy" in result:
-        return "policy"
-    if "casual" in result:
-        return "casual"
-    return "unknown"
-
+        pass
+    
+    return "unknown"  # ✅ Default to unknown for safety
 
 def rewrite_query(query, llm):
     prompt = f"""Rewrite the query using company policy terminology.\nExample: commission → allowance, salary → compensation\nQuery: {query}\nRewritten:"""
@@ -453,48 +256,54 @@ def truncate_context(context, max_chars=600):
         truncated += s + " "
     return truncated.strip()
 
-
 def run_rag(query, embedder, vector_store, llm, reranker, bm25):
     msgs = st.session_state.get("messages", [])
     recent = msgs[-8:] if msgs else []
-    conversation_text = "\n".join(
-        [f"{m['role'].capitalize()}: {m['content']}" for m in recent]
-    )
+    conversation_text = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in recent])
 
     q_type = classify_query(query, llm)
-    if q_type in ("policy", "unknown"):
-        pass  # continue with retrieval
+    
+    # ✅ IDENTITY: Return confident identity response
     if q_type == "identity":
         return (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
-            "I help you understand company policies, benefits, and guidelines. Feel free to ask me anything!",
-            [],
-            "",
-            "identity",
+            "I help employees understand company policies, leave policies, employment contracts, compensation, and benefits. "
+            "Feel free to ask me anything related to company policies and guidelines!",
+            [], "", "identity",
         )
 
+    # ✅ CASUAL: Only handle pure greetings
     if q_type == "casual":
         answer = llm.generate(query, context=conversation_text, casual=True) or ""
         return answer, [], "", "casual"
 
+    # ✅ POLICY or UNKNOWN: Try retrieval
     rewritten_query = rewrite_query(query, llm)
     qe = embedder.embed_query(rewritten_query)
     dense_results = vector_store.search(qe, k=20, threshold=0.2)
     sparse_results = bm25.search(query, k=15)
     sparse_results_formatted = [
-        {
-            "text": r["text"],
-            "score": r["score"],
-            "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"},
-        }
+        {"text": r["text"], "score": r["score"],
+         "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"}}
         for r in sparse_results
     ]
     combined = dense_results + sparse_results_formatted
 
+    # ✅ NO CONTEXT FOUND: Return out-of-context response
     if not combined:
-        answer = llm.generate(query, context=conversation_text, fallback=True) or ""
-        return answer, [], "", "empty"
+        return (
+            "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
+            "I don't have information about that question in the company policy documents. "
+            "I'm trained specifically to help with:\n"
+            "- Leave policies\n"
+            "- Employment contracts\n"
+            "- Compensation & allowances\n"
+            "- Communication guidelines\n\n"
+            "Feel free to ask me anything related to company policies!",
+            [], "", "out_of_context"
+        )
 
+    # ✅ CONTEXT FOUND: Use RAG with policy prompt
     docs = [{"text": r["text"], "metadata": r["metadata"]} for r in combined]
     reranked = reranker.rerank(query, docs, top_k=5)
     context = "\n\n".join([r["text"] for r in reranked])
@@ -507,7 +316,7 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
         answer = str(answer)
 
     sources, seen = [], set()
-    if "i don't know" not in answer.lower():
+    if "i don't know" not in answer.lower() and "out of context" not in answer.lower():
         for r in reranked:
             src = f"{r['metadata']['file_name']} — Page {r['metadata']['page']}"
             if src not in seen:
@@ -515,7 +324,6 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25):
                 seen.add(src)
 
     return answer, sources, context[:800], "ok"
-
 
 # ============================================
 # SESSION STATE
