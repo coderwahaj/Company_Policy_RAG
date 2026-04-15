@@ -503,7 +503,7 @@ if not st.session_state.messages:
     st.markdown(
         """
     <div class="welcome-card">
-        <h2>🏢 Company Policy Assistant</h2>
+        <h2>🏢Wamo Labs Policy Assistant</h2>
         <p>Ask me anything about company policies, leave, contracts, and benefits.<br>
         Load the pipeline from the sidebar to get started.</p>
     </div>
