@@ -163,6 +163,26 @@ http://localhost:8501
 ```
 
 ---
+🐳 Docker (Recommended)
+Build the Image
+bashdocker build -t wamo-policy-chatbot .
+Run the Container
+bashdocker run -p 8501:8501 \
+  -e GROQ_API_KEY="your_groq_api_key" \
+  -e HF_API_KEY="your_huggingface_token" \
+  -e GEMINI_API_KEY="your_gemini_api_key" \
+  -v $(pwd)/data:/app/data \
+  wamo-policy-chatbot
+Open: http://localhost:8501
+
+Note: If port 8501 is in use, change -p 8501:8501 to -p 8502:8501 and open http://localhost:8502
+
+Useful Docker Commands
+bashdocker ps                          # List running containers
+docker stop <container_id>         # Stop a container
+docker images                      # List all images
+docker logs <container_id>         # View container logs
+docker rmi wamo-policy-chatbot     # Remove image to rebuild fresh
 
 ## 🧪 Evaluation
 
@@ -229,6 +249,7 @@ python -m eval.eval_comparison
 *  Long-term memory (vector DB persistence)
 *  Evaluation dashboard (LangSmith-like)
 *  Multi-language support
+*  Docker Compose setup
 
 ---
 
@@ -252,11 +273,5 @@ Software Engineer | AI Enthusiast
 ---
 
 ## ⭐ Acknowledgements
-
-* SentenceTransformers
-* FAISS
-* Rank-BM25
-* Groq API
-* Streamlit
-
+SentenceTransformers · FAISS · Rank-BM25 · Groq API · Streamlit
 ---
