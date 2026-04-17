@@ -1,13 +1,13 @@
 import os
 import json
 import threading
-from retriever.bm25_retriever import BM25Retriever
-from reranker.reranker import Reranker
-from llm import get_llm
-from vectorstore.faiss_store import FAISSVectorStore
-from embeddings.embedder import Embedder
-from processing.chunker import chunk_documents
-from ingestion.loader import load_pdfs_from_directory
+from rag.retriever.bm25_retriever import BM25Retriever
+from rag.reranker.reranker import Reranker
+from rag.llm import get_llm
+from rag.vectorstore.faiss_store import FAISSVectorStore
+from rag.embeddings.embedder import Embedder
+from rag.processing.chunker import chunk_documents
+from rag.ingestion.loader import load_pdfs_from_directory
 
 PIPELINE_INDEX_FILE = "vector_store/faiss.index"
 PIPELINE_DOCSTORE_FILE = "vector_store/docstore.pkl"
@@ -85,11 +85,20 @@ def _build_pipeline(provider: str, data_root="data/policy"):
 
     embedder = Embedder()
     embeddings = embedder.embed_texts(texts)
-    dimension = len(embeddings[0]) if embeddings else 768
-    vs = FAISSVectorStore(dimension)
-    if embeddings:
-        vs.add_embeddings(embeddings, texts, metadatas)
+    has_rows = embeddings is not None and (
+        (hasattr(embeddings, "shape") and embeddings.shape[0] > 0) or
+        (not hasattr(embeddings, "shape") and len(embeddings) > 0)
+    )
 
+    dimension = (
+        int(embeddings.shape[1])
+        if hasattr(embeddings, "shape") and embeddings.shape[0] > 0
+        else (len(embeddings[0]) if has_rows else 768)
+    )
+
+    vs = FAISSVectorStore(dimension)
+    if has_rows:
+        vs.add_embeddings(embeddings, texts, metadatas)
     bm25 = BM25Retriever(texts)
     fp = compute_data_fingerprint(data_root)
     save_pipeline(vs, texts, bm25, len(texts), fp)

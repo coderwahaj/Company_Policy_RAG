@@ -5,9 +5,9 @@ from backend.app.api.routes import router
 app = FastAPI(title="Wamo Policy Assistant API")
 from backend.app.core.pipeline import get_pipeline
 
-@app.on_event("startup")
-def warmup():
-    get_pipeline("groq")
+# @app.on_event("startup")
+# def warmup():
+#     get_pipeline("groq")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # tighten later for React
