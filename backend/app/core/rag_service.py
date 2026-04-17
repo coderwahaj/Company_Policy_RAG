@@ -122,3 +122,98 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25, history=None):
             seen.add(src)
 
     return answer, sources, context[:800], "ok"
+def run_rag_stream(query, embedder, vector_store, llm, reranker, bm25, history=None):
+    """
+    Yield:
+      ("token", {"delta": "..."})
+    Then return final metadata via StopIteration value is messy, so instead
+    we yield ("done", {...}) as the last event.
+    """
+    history = history or []
+    recent = history[-8:]
+    conversation_text = "\n".join(
+        [f"{m['role'].capitalize()}: {m['content']}" for m in recent]
+    )
+
+    q_type = classify_query(query, llm)
+
+    # identity/casual can also stream, but they are short; we just yield once.
+    if q_type == "identity":
+        answer = (
+            "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
+            "I help employees understand company policies, leave policies, "
+            "employment contracts, compensation, and benefits."
+        )
+        yield ("token", {"delta": answer})
+        yield ("done", {"answer": answer, "sources": [], "context": "", "status": "identity"})
+        return
+
+    if q_type == "casual":
+        # If llm supports streaming, use it
+        if hasattr(llm, "generate_stream"):
+            acc = ""
+            for delta in llm.generate_stream(query, context=conversation_text, casual=True):
+                acc += delta
+                yield ("token", {"delta": delta})
+            yield ("done", {"answer": acc, "sources": [], "context": "", "status": "casual"})
+            return
+
+        answer = llm.generate(query, context=conversation_text, casual=True) or ""
+        yield ("token", {"delta": answer})
+        yield ("done", {"answer": answer, "sources": [], "context": "", "status": "casual"})
+        return
+
+    rewritten_query = rewrite_query(query, llm)
+    qe = embedder.embed_query(rewritten_query)
+    dense_results = vector_store.search(qe, k=20, threshold=0.2)
+    sparse_results = bm25.search(query, k=15)
+
+    sparse_results_formatted = [
+        {
+            "text": r["text"],
+            "score": r["score"],
+            "metadata": {"file_name": "unknown", "page": "N/A", "doc_type": "unknown"},
+        }
+        for r in sparse_results
+    ]
+
+    combined = dense_results + sparse_results_formatted
+    docs = [{"text": r["text"], "metadata": r["metadata"]} for r in combined]
+    reranked = reranker.rerank(query, docs, top_k=5)
+
+    if not reranked:
+        answer = (
+            "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
+            "I don't have information about that question in the company policy documents. "
+            "Ask me about leave policies, compensation, contracts, or benefits."
+        )
+        yield ("token", {"delta": answer})
+        yield ("done", {"answer": answer, "sources": [], "context": "", "status": "out_of_context"})
+        return
+
+    context = "\n\n".join([r["text"] for r in reranked])
+    full_context = (conversation_text + "\n\n" + context).strip()
+
+    # sources
+    sources, seen = [], set()
+    for r in reranked:
+        src = f"{r['metadata']['file_name']} — Page {r['metadata']['page']}"
+        if src not in seen:
+            sources.append(src)
+            seen.add(src)
+
+    # TRUE streaming from Groq
+    if hasattr(llm, "generate_stream"):
+        acc = ""
+        print("DEBUG: llm has generate_stream?", hasattr(llm, "generate_stream"))
+        print("DEBUG: llm class:", type(llm))
+        for delta in llm.generate_stream(query, full_context):
+            acc += delta
+            yield ("token", {"delta": delta})
+        yield ("done", {"answer": acc, "sources": sources, "context": context[:800], "status": "ok"})
+        return
+
+    # fallback to non-streaming
+    answer = llm.generate(query, full_context) or ""
+    yield ("token", {"delta": answer})
+    yield ("done", {"answer": answer, "sources": sources, "context": context[:800], "status": "ok"})
