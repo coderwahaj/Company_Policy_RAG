@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.api.routes import router
-
+from backend.app.api.stream_routes import router as stream_router
 app = FastAPI(title="Wamo Policy Assistant API")
 from backend.app.core.pipeline import get_pipeline
 
@@ -17,3 +17,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(stream_router)
