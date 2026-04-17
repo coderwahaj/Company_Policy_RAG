@@ -15,12 +15,12 @@ sys.path.insert(
 # IMPORTS
 # =========================
 
-from ingestion.loader import load_pdfs_from_directory
-from processing.chunker import chunk_documents
-from embeddings.embedder import Embedder
-from vectorstore.faiss_store import FAISSVectorStore
-from llm import get_llm
-from reranker.reranker import Reranker
+from rag.ingestion.loader import load_pdfs_from_directory
+from rag.processing.chunker import chunk_documents
+from rag.embeddings.embedder import Embedder
+from rag.vectorstore.faiss_store import FAISSVectorStore
+from rag.llm import get_llm
+from rag.reranker.reranker import Reranker
 from main import run_rag
 import os
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     # -------------------------
     # Assuming you have a Python file like "dataset.py" with "DATASET" variable
     try:
-        from dataset import DATASET as dataset
+        from rag.eval.dataset import DATASET as dataset
     except ImportError:
         print(
             "❌ Could not import dataset.py. Make sure your dataset is in dataset.py as DATASET list."

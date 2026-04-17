@@ -3,12 +3,12 @@ main.py — CLI entrypoint for the Company Policy RAG Assistant.
 Run: python main.py
 """
 import numpy as np
-from reranker.reranker import Reranker
-from llm import get_llm
-from vectorstore.faiss_store import FAISSVectorStore
-from embeddings.embedder import Embedder
-from processing.chunker import chunk_documents
-from ingestion.loader import load_pdfs_from_directory
+from rag.reranker.reranker import Reranker
+from rag.llm import get_llm
+from rag.vectorstore.faiss_store import FAISSVectorStore
+from rag.embeddings.embedder import Embedder
+from rag.processing.chunker import chunk_documents
+from rag.ingestion.loader import load_pdfs_from_directory
 import warnings
 warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
 
