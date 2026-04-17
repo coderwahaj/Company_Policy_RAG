@@ -1,49 +1,19 @@
 import { useState } from "react";
-import { chat } from "../api/chat";
+import { useChat } from "../hooks/useChat";
 
 export default function ChatPage() {
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState([]); // {role: 'user'|'assistant', content: string}
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { messages, streaming, error, send, stop } = useChat({ provider: "groq" });
 
-  async function onSend(e) {
+  function onSubmit(e) {
     e.preventDefault();
-    setError("");
-
-    const trimmed = query.trim();
-    if (!trimmed) return;
-
-    // optimistic UI
-    const nextMessages = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
+    send(query);
     setQuery("");
-    setLoading(true);
-
-    try {
-      const data = await chat({
-        query: trimmed,
-        provider: "groq",
-        history: [], // we’ll wire history properly later
-      });
-
-      const answer =
-        data?.answer ??
-        data?.response ??
-        data?.message ??
-        JSON.stringify(data, null, 2);
-
-      setMessages((prev) => [...prev, { role: "assistant", content: answer }]);
-    } catch (err) {
-      setError(err.message || String(err));
-    } finally {
-      setLoading(false);
-    }
   }
 
   return (
     <div style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-      <h2>Company Policy Chat</h2>
+      <h2>Company Policy Chat (Streaming)</h2>
 
       <div
         style={{
@@ -65,7 +35,7 @@ export default function ChatPage() {
             </div>
           ))
         )}
-        {loading && <div style={{ color: "#666" }}>Thinking…</div>}
+        {streaming && <div style={{ color: "#666" }}>Streaming…</div>}
       </div>
 
       {error && (
@@ -74,15 +44,19 @@ export default function ChatPage() {
         </div>
       )}
 
-      <form onSubmit={onSend} style={{ display: "flex", gap: 8 }}>
+      <form onSubmit={onSubmit} style={{ display: "flex", gap: 8 }}>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Type your question…"
           style={{ flex: 1, padding: 10 }}
+          disabled={streaming}
         />
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={streaming}>
           Send
+        </button>
+        <button type="button" onClick={stop} disabled={!streaming}>
+          Stop
         </button>
       </form>
     </div>

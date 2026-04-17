@@ -4,14 +4,16 @@ from typing import Iterator
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from backend.app.models.schemas import ChatRequest, ChatResponse
+from backend.app.models.schemas import ChatRequest
 from backend.app.core.pipeline import get_pipeline
-from backend.app.core.rag_service import run_rag, truncate_context
+from backend.app.core.rag_service import run_rag_stream, truncate_context
 
 router = APIRouter()
 
+
 def sse(event: str, data: dict) -> str:
     return f"event: {event}\n" + f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
 
 @router.post("/chat/stream")
 def chat_stream(payload: ChatRequest):
@@ -19,12 +21,12 @@ def chat_stream(payload: ChatRequest):
 
     def generate() -> Iterator[str]:
         try:
-            # meta event (optional but useful)
+            # optional metadata event
             yield sse("meta", {"provider": provider})
 
             embedder, vector_store, llm, reranker, bm25, _ = get_pipeline(provider)
 
-            answer, sources, context, status = run_rag(
+            for ev, data in run_rag_stream(
                 payload.query,
                 embedder,
                 vector_store,
@@ -32,21 +34,19 @@ def chat_stream(payload: ChatRequest):
                 reranker,
                 bm25,
                 history=[m.model_dump() for m in (payload.history or [])],
-            )
+            ):
+                if ev == "token":
+                    # expects {"delta": "..."}
+                    yield sse("token", data)
 
-            # Stream tokens (chunked for now)
-            chunk_size = 20
-            for i in range(0, len(answer), chunk_size):
-                yield sse("token", {"delta": answer[i : i + chunk_size]})
+                elif ev == "done":
+                    # ensure context truncation in final payload
+                    data["context"] = truncate_context(data.get("context", ""), 600)
+                    yield sse("done", data)
 
-            final = ChatResponse(
-                answer=answer,
-                sources=sources,
-                context=truncate_context(context, 600),
-                status=status,
-            )
-
-            yield sse("done", final.model_dump())
+                elif ev == "error":
+                    # if you ever yield errors from run_rag_stream in the future
+                    yield sse("error", data)
 
         except Exception as e:
             yield sse("error", {"message": str(e)})
