@@ -14,3 +14,6 @@ scikit-learn==1.8.0
 numpy==2.4.4
 pandas==3.0.2
 groq==0.28.0
+fastapi
+uvicorn[standard]
+pydantic
