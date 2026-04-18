@@ -189,20 +189,43 @@ export function useChat({ provider = "groq" } = {}) {
   }
 
   function stop() {
-    streamRef.current?.abort?.();
-    streamRef.current = null;
+  // abort backend stream
+  streamRef.current?.abort?.();
+  streamRef.current = null;
 
-    doneReceivedRef.current = true;
-    flushAll();
-    stopTyper();
-    setStreaming(false);
+  // flush queued tokens to keep what was already received
+  flushAll();
 
-    if (finalMetaRef.current) {
-      attachMetaToLastAssistant(finalMetaRef.current);
-      finalMetaRef.current = null;
+  // stop typing loop immediately
+  stopTyper();
+  setStreaming(false);
+
+  // prevent any late done/meta handling
+  doneReceivedRef.current = false;
+  finalMetaRef.current = null;
+
+  // append explicit interruption marker once
+  setMessages((prev) => {
+    const out = [...prev];
+    for (let i = out.length - 1; i >= 0; i--) {
+      if (out[i].role === "assistant") {
+        const existing = out[i].content || "";
+        if (!existing.includes("[Stopped by interruption]")) {
+          out[i] = {
+            ...out[i],
+            content: `${existing}\n\n[Stopped by interruption]`,
+            meta: {
+              ...(out[i].meta || {}),
+              status: "interrupted",
+            },
+          };
+        }
+        break;
+      }
     }
-  }
-
+    return out;
+  });
+}
   function clear() {
     stop();
     setMessages([]);

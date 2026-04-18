@@ -13,7 +13,7 @@
 //   indexedDocs = [],
 //   suggestions = [],
 //   onSuggestion,
-  
+
 // }) {
 //   return (
 //     <aside
@@ -26,7 +26,7 @@
 //       ].join(" ")}
 //     >
 //       <div className="h-full min-h-0 px-3 py-3 overflow-y-auto scroll-on-hover scroll-smooth">
-        
+
 //         {/* Header */}
 //         <div className="mb-4 flex items-start justify-between gap-2">
 //           <div className="flex items-start gap-2 min-w-0">
@@ -229,7 +229,7 @@ export default function Sidebar({
       className={[
         "h-full shrink-0 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl",
         "shadow-[0_20px_70px_rgba(0,0,0,0.35)] transition-all duration-300",
-        collapsed ? "w-[78px]" : "w-[300px]",
+        collapsed ? "w-[68px]" : "w-[280px]",
       ].join(" ")}
     >
       {/* Independent sidebar scroll */}
@@ -270,26 +270,42 @@ export default function Sidebar({
               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">
                 Choose Model
               </label>
-              <select
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                disabled={loading}
-                className="w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-300/50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <option value="groq">Groq</option>
-                <option value="gemini">Gemini</option>
-              </select>
+
+              <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/15 bg-black/30 p-1">
+                {["groq", "gemini"].map((m) => {
+                  const active = provider === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setProvider(m)}
+                      disabled={loading}
+                      className={[
+                        "rounded-lg px-3 py-2 text-sm font-medium transition",
+                        active
+                          ? "bg-gradient-to-r from-cyan-300 to-violet-300 text-slate-900 shadow"
+                          : "text-slate-300 hover:bg-white/10",
+                        "disabled:cursor-not-allowed disabled:opacity-60",
+                      ].join(" ")}
+                    >
+                      {m === "groq" ? "Groq" : "Gemini"}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Action buttons */}
             <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                onClick={onLoadPipeline}
-                disabled={loading}
-                className="w-fit rounded-xl bg-gradient-to-r from-cyan-300 to-violet-300 px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Working..." : "Load Pipeline"}
-              </button>
+              {!pipelineReady && (
+                <button
+                  onClick={onLoadPipeline}
+                  disabled={loading}
+                  className="w-fit rounded-xl bg-gradient-to-r from-cyan-300 to-violet-300 px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "Working..." : "Load Pipeline"}
+                </button>
+              )}
 
               <button
                 onClick={onReset}
@@ -329,14 +345,18 @@ export default function Sidebar({
                     <p className="text-[10px] uppercase tracking-wide text-slate-400">
                       Messages
                     </p>
-                    <p className="text-sm font-semibold text-white">{messagesCount}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {messagesCount}
+                    </p>
                   </div>
 
                   <div className="col-span-2 rounded-lg bg-black/30 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-wide text-slate-400">
                       Indexed Chunks
                     </p>
-                    <p className="text-sm font-semibold text-white">{chunkCount}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {chunkCount}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -360,7 +380,9 @@ export default function Sidebar({
                     className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 transition hover:bg-white/[0.06]"
                   >
                     <span className="shrink-0">📄</span>
-                    <span className="min-w-0 truncate text-xs text-slate-200">{doc}</span>
+                    <span className="min-w-0 truncate text-xs text-slate-200">
+                      {doc}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -388,15 +410,16 @@ export default function Sidebar({
         ) : (
           /* Collapsed icons */
           <div className="mt-2 flex flex-col items-center gap-2">
-            <button
-              onClick={onLoadPipeline}
-              disabled={loading}
-              className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-r from-cyan-300 to-violet-300 text-slate-900 disabled:opacity-60"
-              title="Load Pipeline"
-            >
-              ⬆
-            </button>
-
+            {!pipelineReady && (
+              <button
+                onClick={onLoadPipeline}
+                disabled={loading}
+                className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-r from-cyan-300 to-violet-300 text-slate-900 disabled:opacity-60"
+                title="Load Pipeline"
+              >
+                ⬆
+              </button>
+            )}
             <button
               onClick={onReset}
               disabled={loading}
