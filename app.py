@@ -52,12 +52,14 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
 def load_css(css_path: str):
     if os.path.exists(css_path):
         with open(css_path, "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     else:
         st.warning(f"CSS file not found: {css_path}")
+
 
 # ============================================
 # CUSTOM CSS (keep your existing CSS)
@@ -67,9 +69,12 @@ load_css("styles.css")
 # ============================================
 # PIPELINE INIT (shared backend)
 # ============================================
+
+
 @st.cache_resource(show_spinner=False)
 def init_pipeline(provider):
     return get_pipeline(provider)
+
 
 # ============================================
 # SESSION STATE
