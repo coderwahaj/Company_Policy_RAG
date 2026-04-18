@@ -51,4 +51,12 @@ def chat_stream(payload: ChatRequest):
         except Exception as e:
             yield sse("error", {"message": str(e)})
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return StreamingResponse(
+    generate(),
+    media_type="text/event-stream",
+    headers={
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    },
+)

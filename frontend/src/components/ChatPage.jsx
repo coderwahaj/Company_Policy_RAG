@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
 import Sidebar from "./Sidebar";
 import SourceCard from "./SourceCard";
+import {
+  loadPipeline,
+  resetPipeline,
+  getPipelineStatus,
+} from "../api/pipeline";
 
 const INDEXED_DOCS = [
   "communication.pdf",
@@ -21,6 +26,7 @@ export default function ChatPage() {
   const [provider, setProvider] = useState("groq");
   const [pipelineReady, setPipelineReady] = useState(false);
   const [chunkCount, setChunkCount] = useState("—");
+  const [pipelineLoading, setPipelineLoading] = useState(false);
 
   // sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -29,7 +35,24 @@ export default function ChatPage() {
     provider,
   });
   const bottomRef = useRef(null);
-
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const status = await getPipelineStatus(provider);
+        if (!mounted) return;
+        setPipelineReady(!!status?.ready);
+        setChunkCount(status?.chunk_count ?? "—");
+      } catch {
+        if (!mounted) return;
+        setPipelineReady(false);
+        setChunkCount("—");
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [provider]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: streaming ? "auto" : "smooth",
@@ -42,15 +65,32 @@ export default function ChatPage() {
     [provider],
   );
 
-  function handleLoadPipeline() {
-    setPipelineReady(true);
-    setChunkCount(1234);
+  async function handleLoadPipeline() {
+    try {
+      setPipelineLoading(true);
+      const data = await loadPipeline(provider);
+      setPipelineReady(true);
+      setChunkCount(data?.chunk_count ?? "—");
+    } catch (e) {
+      alert(`Load pipeline failed: ${e.message}`);
+      setPipelineReady(false);
+    } finally {
+      setPipelineLoading(false);
+    }
   }
 
-  function handleResetPipeline() {
-    setPipelineReady(false);
-    setChunkCount("—");
-    clear();
+  async function handleResetPipeline() {
+    try {
+      setPipelineLoading(true);
+      await resetPipeline(provider);
+      setPipelineReady(false);
+      setChunkCount("—");
+      clear();
+    } catch (e) {
+      alert(`Reset pipeline failed: ${e.message}`);
+    } finally {
+      setPipelineLoading(false);
+    }
   }
 
   function handleClearChat() {
@@ -104,6 +144,7 @@ export default function ChatPage() {
             suggestions={SAMPLE_QUESTIONS}
             onSuggestion={handleSuggestion}
             messagesCount={messages.length}
+            loading={pipelineLoading}
           />
 
           {/* Main chat area takes remaining width */}
