@@ -20,7 +20,7 @@ _PIPELINE_CACHE = {}
 def compute_data_fingerprint(root_dir: str):
     import hashlib
 
-    h = hashlib.sha1()
+    hash = hashlib.sha1()
     if not os.path.exists(root_dir):
         return None
 
@@ -31,14 +31,14 @@ def compute_data_fingerprint(root_dir: str):
                 s = os.stat(fp)
             except OSError:
                 continue
-            h.update(fp.replace("\\", "/").encode())
-            h.update(str(s.st_size).encode())
-            h.update(str(int(s.st_mtime)).encode())
+            hash.update(fp.replace("\\", "/").encode())
+            hash.update(str(s.st_size).encode())
+            hash.update(str(int(s.st_mtime)).encode())
 
-    return h.hexdigest()
+    return hash.hexdigest()
 
 
-def save_pipeline(vs, texts, bm25, chunk_count, data_fingerprint: str):
+def save_pipeline(vs, chunk_count, data_fingerprint: str):
     os.makedirs("vector_store", exist_ok=True)
     vs.save(PIPELINE_INDEX_FILE, PIPELINE_DOCSTORE_FILE)
 
@@ -134,9 +134,7 @@ def get_pipeline(provider: str = "groq", data_root="data/policy"):
         return pipeline
 
 
-# ---------------------------
 # Added helpers for API routes
-# ---------------------------
 
 def reset_pipeline(provider: str = "groq", data_root="data/policy"):
     """
@@ -149,10 +147,10 @@ def reset_pipeline(provider: str = "groq", data_root="data/policy"):
     with _PIPELINE_LOCK:
         _PIPELINE_CACHE.pop(key, None)
 
+
 def pipeline_status(provider: str = "groq", data_root="data/policy"):
     """
-    Return readiness + chunk_count.
-    Priority:
+    Return readiness and chunk_count.
       1) in-memory cache
       2) persisted manifest (if fingerprint matches)
     """

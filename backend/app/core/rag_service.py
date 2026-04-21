@@ -66,9 +66,9 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25, history=None):
         [f"{m['role'].capitalize()}: {m['content']}" for m in recent]
     )
 
-    q_type = classify_query(query, llm)
+    query_type = classify_query(query, llm)
 
-    if q_type == "identity":
+    if query_type == "identity":
         return (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
             "I help employees understand company policies, leave policies, "
@@ -78,13 +78,13 @@ def run_rag(query, embedder, vector_store, llm, reranker, bm25, history=None):
             "identity",
         )
 
-    if q_type == "casual":
+    if query_type == "casual":
         answer = llm.generate(query, context=conversation_text, casual=True) or ""
         return answer, [], "", "casual"
 
     rewritten_query = rewrite_query(query, llm)
-    qe = embedder.embed_query(rewritten_query)
-    dense_results = vector_store.search(qe, k=20, threshold=0.2)
+    query_embedding = embedder.embed_query(rewritten_query)
+    dense_results = vector_store.search(query_embedding, k=20, threshold=0.2)
     sparse_results = bm25.search(query, k=15)
 
     sparse_results_formatted = [
@@ -135,10 +135,10 @@ def run_rag_stream(query, embedder, vector_store, llm, reranker, bm25, history=N
         [f"{m['role'].capitalize()}: {m['content']}" for m in recent]
     )
 
-    q_type = classify_query(query, llm)
+    query_type = classify_query(query, llm)
 
     # identity/casual can also stream, but they are short; we just yield once.
-    if q_type == "identity":
+    if query_type == "identity":
         answer = (
             "I'm the **Wamo Labs Company Policy Assistant** 🏢\n\n"
             "I help employees understand company policies, leave policies, "
@@ -148,7 +148,7 @@ def run_rag_stream(query, embedder, vector_store, llm, reranker, bm25, history=N
         yield ("done", {"answer": answer, "sources": [], "context": "", "status": "identity"})
         return
 
-    if q_type == "casual":
+    if query_type == "casual":
         # If llm supports streaming, use it
         if hasattr(llm, "generate_stream"):
             acc = ""
@@ -164,8 +164,8 @@ def run_rag_stream(query, embedder, vector_store, llm, reranker, bm25, history=N
         return
 
     rewritten_query = rewrite_query(query, llm)
-    qe = embedder.embed_query(rewritten_query)
-    dense_results = vector_store.search(qe, k=20, threshold=0.2)
+    query_embedding = embedder.embed_query(rewritten_query)
+    dense_results = vector_store.search(query_embedding, k=20, threshold=0.2)
     sparse_results = bm25.search(query, k=15)
 
     sparse_results_formatted = [
