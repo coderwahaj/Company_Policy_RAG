@@ -19,36 +19,27 @@ def clean_text(text: str) -> str:
     for line in lines:
         line = line.strip()
 
-        #  Skip empty lines
         if not line:
             continue
-
-        # Remove URLs (generic)
         if "http" in line or "www" in line:
             continue
-
-        #  Remove page numbers (e.g., "Page 1", "1", etc.)
         if re.match(r"^page\s*\d+", line.lower()):
             continue
         if re.match(r"^\d+$", line):
             continue
 
-        #  Remove excessive symbols / navigation marks
         if "▸" in line or "◂" in line:
             continue
 
-        # Fix broken words like "fromtyping" → "from typing"
         line = re.sub(r"([a-z])([A-Z])", r"\1 \2", line)
 
         cleaned_lines.append(line)
 
     # Join back into cleaned text
     cleaned_text = "\n".join(cleaned_lines)
-
-    # preserve newlines; 
     # normalize spaces per-line
     cleaned_text = "\n".join(re.sub(r"[ \t]+", " ", ln).strip() for ln in cleaned_lines)
-    # optional: collapse >2 newlines
+    # collapse >2 newlines
     cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
 
     return cleaned_text.strip()

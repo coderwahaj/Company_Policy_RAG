@@ -10,16 +10,11 @@ class GeminiLLM:
 
         genai.configure(api_key=api_key)
 
-        # BEST FREE MODEL
         self.model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
     def generate_raw(self, prompt):
         response = self.model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0,
-                "max_output_tokens": 100
-            }
+            prompt, generation_config={"temperature": 0, "max_output_tokens": 100}
         )
         return response.text.strip()
 
@@ -57,11 +52,7 @@ User: {query}
 """
 
         response = self.model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.3,
-                "max_output_tokens": 300
-            }
+            prompt, generation_config={"temperature": 0.3, "max_output_tokens": 300}
         )
 
         return response.text.strip()
