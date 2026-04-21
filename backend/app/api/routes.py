@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.app.models.schemas import ChatRequest, ChatResponse
+from backend.app.models.chat_schemas import ChatRequest, ChatResponse
 from backend.app.core.pipeline import get_pipeline
 from backend.app.core.rag_service import run_rag, truncate_context
 
