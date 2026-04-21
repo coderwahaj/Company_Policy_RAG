@@ -2,6 +2,7 @@
 main.py — CLI entrypoint for the Company Policy RAG Assistant.
 Run: python main.py
 """
+
 import numpy as np
 from rag.processing.reranker import Reranker
 from rag.llm import get_llm
@@ -10,12 +11,11 @@ from rag.embeddings.embedder import Embedder
 from rag.processing.chunker import chunk_documents
 from rag.ingestion.loader import load_pdfs_from_directory
 import warnings
+
 warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
 
 
-# =========================
-# NEW: QUERY CLASSIFIER
-# =========================
+# QUERY CLASSIFIER
 def classify_query(query, llm):
     prompt = f"""
 Classify the query into one of:
@@ -36,9 +36,9 @@ Answer (one word only):
         return "unknown"
 
 
-# =========================
-# NEW: QUERY REWRITER
-# =========================
+# QUERY REWRITER
+
+
 def rewrite_query(query, llm):
     prompt = f"""
 Rewrite the query using company policy terminology.
@@ -53,9 +53,7 @@ Rewritten:
     return llm.generate_raw(prompt)
 
 
-# =========================
 #  RAG FUNCTION
-# =========================
 def run_rag(query, embedder, vector_store, llm, reranker):
     # 1. Classify query
     q_type = classify_query(query, llm)
@@ -101,7 +99,8 @@ def run_rag(query, embedder, vector_store, llm, reranker):
 def build_pipeline(data_dir="data/policy"):
     """Create embedder, vector store, llm, reranker pipeline objects."""
     docs = load_pdfs_from_directory(
-        data_dir, source_name="company_policy", domain="policy")
+        data_dir, source_name="company_policy", domain="policy"
+    )
     if not docs:
         print(f"Warning: no PDFs found in {data_dir}")
 
@@ -141,8 +140,7 @@ def main():
             if q.lower() in ("exit", "quit"):
                 break
 
-            answer, sources, context, status = run_rag(
-                q, embedder, vs, llm, reranker)
+            answer, sources, context, status = run_rag(q, embedder, vs, llm, reranker)
             print("\nAnswer:\n", answer)
             if sources:
                 print("\nSources:")

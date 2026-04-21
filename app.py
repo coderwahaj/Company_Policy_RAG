@@ -1,20 +1,14 @@
 from backend.app.core.pipeline import get_pipeline
 from backend.app.core.rag_service import run_rag, truncate_context
 import streamlit as st
-import streamlit.components.v1 as components
 from huggingface_hub import login
 from dotenv import load_dotenv
 import logging
 import os
-import warnings
 from datetime import datetime
 
-warnings.filterwarnings("ignore", message=r"Accessing __path__ from .*")
-warnings.filterwarnings("ignore", message=".*__path__.*")
-warnings.filterwarnings("ignore", message=".*unauthenticated requests.*")
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
@@ -26,22 +20,16 @@ os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "0"
 
 load_dotenv()
 
-# ============================================
-# AUTHENTICATE WITH HUGGING FACE
-# ============================================
 hf_token = os.getenv("HF_API_KEY")
 if hf_token:
     try:
         login(token=hf_token, add_to_git_credential=False)
-        print("✅ Hugging Face authenticated successfully")
+        logger.info("Hugging Face authenticated successfully")
     except Exception as e:
-        print(f"⚠️  HF authentication warning: {e}")
+        logger.warning("HF authentication warning: %s", e)
 else:
-    print("⚠️  HF_TOKEN not found in .env file")
+    logger.warning("HF_TOKEN not found in .env file")
 
-# =========================
-# PAGE CONFIG  (must be first Streamlit call)
-# =========================
 st.set_page_config(
     page_title="Company Policy Assistant",
     page_icon="🏢",
@@ -58,14 +46,7 @@ def load_css(css_path: str):
         st.warning(f"CSS file not found: {css_path}")
 
 
-# ============================================
-# CUSTOM CSS (keep your existing CSS)
-# =========================================
 load_css("styles.css")
-
-# ============================================
-# PIPELINE INIT (shared backend)
-# ============================================
 
 
 @st.cache_resource(show_spinner=False)
@@ -73,9 +54,7 @@ def init_pipeline(provider):
     return get_pipeline(provider)
 
 
-# ============================================
-# SESSION STATE
-# ============================================
+# Session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "pipeline_ready" not in st.session_state:
@@ -85,9 +64,7 @@ if "pipeline_objects" not in st.session_state:
 if "selected_llm" not in st.session_state:
     st.session_state.selected_llm = "groq"
 
-# ============================================
-# SIDEBAR
-# ============================================
+# Sidebar
 with st.sidebar:
     st.markdown("## 🏢 Policy Assistant")
     st.markdown("---")
@@ -153,10 +130,7 @@ with st.sidebar:
             st.session_state["_suggestion"] = s
             st.rerun()
 
-# ============================================
-# MAIN CHAT AREA
-# ============================================
-
+# Main chat area
 if not st.session_state.messages:
     st.markdown(
         """
@@ -186,11 +160,11 @@ for msg in st.session_state.messages:
                 for src in msg["sources"]:
                     st.markdown(f"- `{src}`")
 
-# ── Handle suggestion button clicks ──
+# Suggestion click handling
 if "_suggestion" in st.session_state:
     query = st.session_state.pop("_suggestion")
     if not st.session_state.pipeline_ready:
-        st.warning("⚠️ Please load the pipeline first from the sidebar.")
+        st.warning(" Please load the pipeline first from the sidebar.")
     else:
         with st.chat_message("user"):
             st.markdown(query)
@@ -235,7 +209,7 @@ if "_suggestion" in st.session_state:
             }
         )
 
-# ── Native bottom-pinned chat input ──
+# Chat input
 query = st.chat_input(
     "Ask about company policy…",
     disabled=not st.session_state.pipeline_ready,
