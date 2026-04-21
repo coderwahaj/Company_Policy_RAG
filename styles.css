@@ -124,7 +124,6 @@ html, body, [class*="css"] {
     padding: 10px 14px;
     display: inline-block;
     max-width: 80%;
-    float: right;
 }
 
 /* ── Source / context expanders ── */
