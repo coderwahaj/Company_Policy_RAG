@@ -2,7 +2,7 @@ import os
 import json
 import threading
 from rag.retriever.bm25_retriever import BM25Retriever
-from rag.reranker.reranker import Reranker
+from rag.processing.reranker import Reranker
 from rag.llm import get_llm
 from rag.vectorstore.faiss_store import FAISSVectorStore
 from rag.embeddings.embedder import Embedder

@@ -9,7 +9,6 @@ class GeminiLLM:
             raise EnvironmentError("GEMINI_API_KEY not found")
 
         genai.configure(api_key=api_key)
-
         self.model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
     def generate_raw(self, prompt):
@@ -21,38 +20,36 @@ class GeminiLLM:
     def generate(self, query, context="", casual=False, fallback=False):
         if casual:
             prompt = f"""
-You are a friendly assistant.
+            You are a friendly assistant.
 
-Conversation:
-{context}
+            Conversation:
+            {context}
 
-User: {query}
-Reply naturally:
-"""
+            User: {query}
+            Reply naturally:"""
         elif fallback:
             prompt = f"""
-You are a friendly assistant.
+            You are a friendly assistant.
 
-Conversation:
-{context}
+            Conversation:
+            {context}
 
-Provide a brief (1-3 line) helpful answer to the user's general question.
-Do NOT mention company policy or explain that the question is out of scope.
+            Provide a brief (1-3 line) helpful answer to the user's general question.
+            Do NOT mention company policy or explain that the question is out of scope.
 
-User: {query}
-"""
+            User: {query}
+            """
         else:
             prompt = f"""
-You are a Wamo labs Company Policy Assistant.
-Use the following context to answer:
+            You are a Wamo labs Company Policy Assistant.
+            Use the following context to answer:
 
-{context}
+            {context}
 
-User: {query}
-"""
+            User: {query}
+            """
 
         response = self.model.generate_content(
             prompt, generation_config={"temperature": 0.3, "max_output_tokens": 300}
         )
-
         return response.text.strip()

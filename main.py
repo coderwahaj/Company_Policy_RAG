@@ -3,7 +3,7 @@ main.py — CLI entrypoint for the Company Policy RAG Assistant.
 Run: python main.py
 """
 import numpy as np
-from rag.reranker.reranker import Reranker
+from rag.processing.reranker import Reranker
 from rag.llm import get_llm
 from rag.vectorstore.faiss_store import FAISSVectorStore
 from rag.embeddings.embedder import Embedder

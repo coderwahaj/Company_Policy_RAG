@@ -15,7 +15,7 @@ from rag.processing.chunker import chunk_documents
 from rag.embeddings.embedder import Embedder
 from rag.vectorstore.faiss_store import FAISSVectorStore
 from rag.llm import get_llm
-from rag.reranker.reranker import Reranker
+from rag.processing.reranker import Reranker
 from main import run_rag
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
