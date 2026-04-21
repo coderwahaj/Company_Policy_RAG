@@ -1,46 +1,3 @@
-// import { useState } from "react";
-
-// export function useChat({ provider }) {
-//   const [messages, setMessages] = useState([]);
-//   const [streaming, setStreaming] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   const send = (query) => {
-//     const q = query?.trim();
-//     if (!q) return;
-
-//     setError(null);
-//     setMessages((prev) => [...prev, { role: "user", content: q }]);
-//     setStreaming(true);
-
-//     setTimeout(() => {
-//       setMessages((prev) => [
-//         ...prev,
-//         {
-//           role: "assistant",
-//           content: `(${provider.toUpperCase()}) Simulated answer for: "${q}"\n\nBased on policy documents, the notice period is typically 2 months unless otherwise stated in your contract.`,
-//           meta: {
-//             sources: ["employment_contract.pdf", "communication.pdf"],
-//           },
-//         },
-//       ]);
-//       setStreaming(false);
-//     }, 900);
-//   };
-
-//   const stop = () => {
-//     setStreaming(false);
-//   };
-
-//   const clear = () => {
-//     setMessages([]);
-//     setError(null);
-//     setStreaming(false);
-//   };
-
-//   return { messages, streaming, error, send, stop, clear };
-// }
-
 import { useEffect, useRef, useState } from "react";
 import { chatStream } from "../api/chatStream";
 
@@ -56,32 +13,32 @@ export function useChat({ provider = "groq" } = {}) {
   const typerTimerRef = useRef(null);
 
   const CHARS_PER_TICK = 3;
-  const TICK_MS = 24;
+  const TICK_PER_MILLISECOND = 24;
 
   function appendToLastAssistant(text) {
     if (!text) return;
     setMessages((prev) => {
-      const out = [...prev];
-      for (let i = out.length - 1; i >= 0; i--) {
-        if (out[i].role === "assistant") {
-          out[i] = { ...out[i], content: (out[i].content || "") + text };
+      const outtext = [...prev];
+      for (let i = outtext.length - 1; i >= 0; i--) {
+        if (outtext[i].role === "assistant") {
+          outtext[i] = { ...outtext[i], content: (outtext[i].content || "") + text };
           break;
         }
       }
-      return out;
+      return outtext;
     });
   }
 
   function attachMetaToLastAssistant(meta) {
     setMessages((prev) => {
-      const out = [...prev];
-      for (let i = out.length - 1; i >= 0; i--) {
-        if (out[i].role === "assistant") {
-          out[i] = { ...out[i], meta: meta || {} };
+      const outtext = [...prev];
+      for (let i = outtext.length - 1; i >= 0; i--) {
+        if (outtext[i].role === "assistant") {
+          outtext[i] = { ...outtext[i], meta: meta || {} };
           break;
         }
       }
-      return out;
+      return outtext;
     });
   }
 
@@ -129,7 +86,7 @@ export function useChat({ provider = "groq" } = {}) {
           finalMetaRef.current = null;
         }
       }
-    }, TICK_MS);
+    }, 1 / TICK_PER_MILLISECOND);
   }
 
   function send(query) {
@@ -206,16 +163,16 @@ export function useChat({ provider = "groq" } = {}) {
 
   // append explicit interruption marker once
   setMessages((prev) => {
-    const out = [...prev];
-    for (let i = out.length - 1; i >= 0; i--) {
-      if (out[i].role === "assistant") {
-        const existing = out[i].content || "";
+    const outtext = [...prev];
+    for (let i = outtext.length - 1; i >= 0; i--) {
+      if (outtext[i].role === "assistant") {
+        const existing = outtext[i].content || "";
         if (!existing.includes("[Stopped by interruption]")) {
-          out[i] = {
-            ...out[i],
+          outtext[i] = {
+            ...outtext[i],
             content: `${existing}\n\n[Stopped by interruption]`,
             meta: {
-              ...(out[i].meta || {}),
+              ...(outtext[i].meta || {}),
               status: "interrupted",
             },
           };
@@ -223,7 +180,7 @@ export function useChat({ provider = "groq" } = {}) {
         break;
       }
     }
-    return out;
+    return outtext;
   });
 }
   function clear() {
