@@ -1,6 +1,3 @@
-# ============================================
-# SUPPRESS WARNINGS & LOAD ENV VARIABLES
-# ============================================
 from backend.app.core.pipeline import get_pipeline
 from backend.app.core.rag_service import run_rag, truncate_context
 import streamlit as st
