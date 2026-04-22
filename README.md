@@ -17,7 +17,7 @@ This project now supports:
 The application is now **fully deployed and production-ready**:
 
 - **Frontend (React):** Hosted on [Vercel](https://vercel.com)
-  - URL: `https://your-vercel-domain.vercel.app` 
+  - URL: `https://company-policy-rag.vercel.app/` 
   - ChatGPT-like chat interface with streaming responses
   - Real-time token streaming from backend
 
