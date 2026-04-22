@@ -30,7 +30,7 @@ export default function ChatPage() {
   const [pipelineLoading, setPipelineLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [copiedKey, setCopiedKey] = useState("");
-
+const inputRef = useRef(null);
   const { messages, streaming, error, send, stop, clear } = useChat({
     provider,
   });
@@ -43,7 +43,11 @@ export default function ChatPage() {
       block: "end",
     });
   }, [messages, streaming]);
-
+useEffect(() => {
+  if (!streaming) {
+    inputRef.current?.focus();
+  }
+}, [streaming]);
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -106,6 +110,7 @@ export default function ChatPage() {
   function handleSuggestion(question) {
     if (!pipelineReady || streaming) return;
     send(question);
+      inputRef.current?.focus();
   }
 
   function onSubmit(e) {
@@ -114,6 +119,7 @@ export default function ChatPage() {
     if (!trimmed || !pipelineReady || streaming) return;
     send(trimmed);
     setQuery("");
+     inputRef.current?.focus();
   }
 
   function copyToClipboard(text, key = "") {
@@ -316,6 +322,7 @@ export default function ChatPage() {
 
                 <form onSubmit={onSubmit} className="flex items-center gap-2">
                   <input
+                  ref={inputRef}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={
