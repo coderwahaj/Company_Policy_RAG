@@ -12,6 +12,22 @@ This project now supports:
 
 ---
 
+##  Live Deployment
+
+The application is now **fully deployed and production-ready**:
+
+- **Frontend (React):** Hosted on [Vercel](https://vercel.com)
+  - URL: `https://your-vercel-domain.vercel.app` 
+  - ChatGPT-like chat interface with streaming responses
+  - Real-time token streaming from backend
+
+- **Backend (FastAPI):** Hosted on [Hugging Face Spaces](https://huggingface.co/spaces)
+  - URL: `https://wahajjjjj-wamopolicy-chatbot.hf.space`
+  - REST API with SSE streaming support
+  - Automatic rebuilds on code changes
+
+---
+
 ## ✨ Core Features
 
 - **Hybrid Retrieval (FAISS + BM25)** for stronger recall
@@ -31,31 +47,40 @@ This project now supports:
 ## 🏗️ High-Level Architecture
 
 ```text
-User Query
+User Query (Browser)
    │
    ▼
-Query Classification (policy / casual / unknown)
+Vercel Frontend (React UI)
+   │
+   ▼
+Hugging Face Backend (FastAPI)
+   ├── Query Classification (policy / casual / unknown)
    │
    ├── Casual  → Direct LLM response
    ├── Unknown → Safe fallback response
+   │
+   ├── Query Rewrite
+   │
+   ├── Hybrid Retrieval
+   │   ├── FAISS (Dense semantic search)
+   │   └── BM25  (Sparse keyword search)
+   │
+   ├── Merge + Deduplicate
+   │
+   ├── Reranker (Top-K)
+   │
+   ├── Context Builder (+ truncation)
+   │
+   └── LLM Generation (Grounded)
+   │
    ▼
-Query Rewrite
+FastAPI SSE Stream
+   │
    ▼
-Hybrid Retrieval
-   ├── FAISS (Dense semantic search)
-   └── BM25  (Sparse keyword search)
+React UI (Real-time token display)
+   │
    ▼
-Merge + Deduplicate
-   ▼
-Reranker (Top-K)
-   ▼
-Context Builder (+ truncation)
-   ▼
-LLM Generation (Grounded)
-   ▼
-Response + Citations + Context
-   ▼
-FastAPI SSE Stream → React UI / Streamlit UI
+User sees response with citations
 ```
 
 ---
@@ -90,7 +115,7 @@ Company_Policy_RAG/
 │   │   │   ├── ChatPage.jsx
 │   │   │   └── Sidebar.jsx
 │   │   └── main.jsx
-│   └── .env                              # VITE_API_BASE_URL
+│   └── .env.production                   # VITE_API_BASE_URL (Hugging Face backend)
 │
 ├── rag/
 │   ├── ingestion/loader.py
@@ -110,6 +135,7 @@ Company_Policy_RAG/
 ├── app.py                                # Streamlit UI entrypoint
 ├── requirements.txt
 ├── Dockerfile
+├── .gitignore                            # Includes .env (never commit secrets!)
 └── README.md
 ```
 
@@ -117,14 +143,14 @@ Company_Policy_RAG/
 
 ## ⚙️ Setup (Local Development)
 
-## 1) Clone
+### 1) Clone
 
 ```bash
 git clone https://github.com/coderwahaj/Company_Policy_RAG.git
 cd Company_Policy_RAG
 ```
 
-## 2) Virtual Environment
+### 2) Virtual Environment
 
 ```bash
 python -m venv .venv
@@ -134,25 +160,29 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-## 3) Install dependencies
+### 3) Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 4) Environment variables
+### 4) Environment variables
 
-Create `.env` in project root:
+Create `.env` in project root (this file is in `.gitignore` and never committed):
 
 ```env
 GROQ_API_KEY=your_groq_api_key
-HF_API_KEY=your_huggingface_token
+HF_TOKEN=your_huggingface_token
+OPEN_API_KEY=your_openai_api_key
 GEMINI_API_KEY=your_gemini_api_key
+HF_HUB_DISABLE_XET=1
 ```
+
+** IMPORTANT:** Never commit `.env` to GitHub. Use secrets in production (Hugging Face Spaces, Vercel environment variables).
 
 ---
 
-## 🚀 Run FastAPI Backend (Streaming API)
+##  Run FastAPI Backend (Local)
 
 ```bash
 uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -162,7 +192,7 @@ Backend URL: **http://127.0.0.1:8000**
 
 ---
 
-## 💬 Run React Frontend (Chat UI)
+## 💬 Run React Frontend (Local)
 
 In a new terminal:
 
@@ -225,6 +255,55 @@ Request body:
 
 ---
 
+## 🐳 Docker & Deployment
+
+### Local Docker Build
+```bash
+docker build -t wamo-policy-assistant .
+```
+
+### Run Locally with Docker
+```bash
+docker run -p 8000:8000 \
+  -e GROQ_API_KEY="your_groq_api_key" \
+  -e HF_TOKEN="your_huggingface_token" \
+  -e GEMINI_API_KEY="your_gemini_api_key" \
+  -v $(pwd)/data:/app/data \
+  wamo-policy-assistant
+```
+
+### Deploy to Hugging Face Spaces
+
+1. Create a new Space on [Hugging Face](https://huggingface.co/spaces)
+2. Select **Docker** as the runtime
+3. Push your code to the Space's Git repo:
+   ```bash
+   git remote add hf https://huggingface.co/spaces/USERNAME/SPACE_NAME
+   git push hf main
+   ```
+4. Hugging Face automatically builds and deploys
+5. Add secrets in Space **Settings** → **Repository secrets**:
+   - `GROQ_API_KEY`
+   - `HF_TOKEN`
+   - `OPEN_API_KEY`
+   - `GEMINI_API_KEY`
+   - `HF_HUB_DISABLE_XET=1`
+
+---
+
+### Deploy Frontend to Vercel
+
+1. Push your React frontend code to GitHub
+2. Go to [Vercel](https://vercel.com) and sign in with GitHub
+3. Click **"Add New"** → **"Project"**
+4. Select your GitHub repository
+5. Configure environment variables:
+   - `VITE_API_BASE_URL=https://wahajjjjj-wamopolicy-chatbot.hf.space`
+6. Click **"Deploy"**
+7. Vercel automatically redeploys on every Git push
+
+---
+
 ## 🧪 Evaluation
 
 ```bash
@@ -240,27 +319,6 @@ python -m eval.eval_comparison
 
 ---
 
-## 🐳 Docker
-
-### Build
-```bash
-docker build -t wamo-policy-assistant .
-```
-
-### Run
-```bash
-docker run -p 8000:8000 \
-  -e GROQ_API_KEY="your_groq_api_key" \
-  -e HF_API_KEY="your_huggingface_token" \
-  -e GEMINI_API_KEY="your_gemini_api_key" \
-  -v $(pwd)/data:/app/data \
-  wamo-policy-assistant
-```
-
-Adjust command if your Dockerfile starts Streamlit instead of FastAPI.
-
----
-
 ## 🧠 Design Decisions
 
 | Component | Choice | Why |
@@ -269,7 +327,8 @@ Adjust command if your Dockerfile starts Streamlit instead of FastAPI.
 | Ranking | Cross-encoder reranker | Improved top-k relevance |
 | Safety | Query classification + fallback | Reduces hallucination risk |
 | Serving | FastAPI + SSE | Real-time token streaming |
-| UI | React + Streamlit | Product UI + rapid experimentation |
+| Frontend | React + Vercel | Fast, scalable, automatic deployments |
+| Backend | FastAPI + HF Spaces | Simple Docker deployment, free hosting |
 | Performance | Pipeline cache + persisted index | Faster warm starts |
 
 ---
@@ -290,17 +349,50 @@ Adjust command if your Dockerfile starts Streamlit instead of FastAPI.
 - [ ] Persistent user/session memory
 - [ ] Admin dashboard for evaluation + observability
 - [ ] Multi-language support
-- [ ] Docker Compose for full stack (backend + frontend)
+- [ ] Authentication (OAuth2 for internal rollout)
+- [ ] Docker Compose for full stack (backend + frontend + Streamlit)
+
+---
+
+## 🔐 Security Best Practices
+
+✅ **Done:**
+- API keys stored as secrets (never in code)
+- `.env` file in `.gitignore` (never committed)
+- CORS configured for frontend domain only
+- SSE streaming prevents token exposure in logs
+
+🔄 **Recommended for Production:**
+- Implement JWT/OAuth2 authentication
+- Add rate limiting on API endpoints
+- Enable HTTPS (automatic on Vercel & HF Spaces)
+- Add request logging and monitoring
+- Implement audit trails for policy queries
+
+---
+
+## 📊 Monitoring & Observability
+
+- **Vercel Logs:** Dashboard shows frontend errors, build logs, and deployment history
+- **Hugging Face Logs:** Space details tab shows backend startup and error logs
+- **Browser DevTools:** Network tab shows SSE stream and response times
 
 ---
 
 ## 👨‍💻 Author
 
 **Wahaj**  
-Software Engineer | AI Enthusiast
+Software Engineer | AI Enthusiast  
+GitHub: [@coderwahaj](https://github.com/coderwahaj)
 
 ---
 
 ## 🙏 Acknowledgements
 
-[SentenceTransformers](https://www.sbert.net/) · [FAISS](https://faiss.ai/) · [Rank-BM25](https://github.com/dorianbrown/rank_bm25) · [Groq](https://groq.com/) · [Gemini](https://ai.google.dev/) · [FastAPI](https://fastapi.tiangolo.com/) · [React](https://react.dev/) · [Streamlit](https://streamlit.io/)
+[SentenceTransformers](https://www.sbert.net/) · [FAISS](https://faiss.ai/) · [Rank-BM25](https://github.com/dorianbrown/rank_bm25) · [Groq](https://groq.com/) · [Gemini](https://ai.google.dev/) · [FastAPI](https://fastapi.tiangolo.com/) · [React](https://react.dev/) · [Streamlit](https://streamlit.io/) · [Vercel](https://vercel.com/) · [Hugging Face](https://huggingface.co/)
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
