@@ -47,13 +47,13 @@ class FAISSVectorStore:
 
         # create instance with proper dimension
         try:
-            dim = index.d
+            dimension = index.d
         except Exception:
             # fallback: try to infer from index.ntotal and index.reconstruct
-            dim = 0
+            dimension = 0
 
-        inst = cls(dim) if dim > 0 else cls(1)
-        inst.index = index
-        inst.texts = data.get("texts", [])
-        inst.metadata = data.get("metadata", [])
-        return inst
+        instance = cls(dimension) if dimension > 0 else cls(1)
+        instance.index = index
+        instance.texts = data.get("texts", [])
+        instance.metadata = data.get("metadata", [])
+        return instance

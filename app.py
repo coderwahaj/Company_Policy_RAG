@@ -20,7 +20,7 @@ os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "0"
 
 load_dotenv()
 
-hf_token = os.getenv("HF_API_KEY")
+hf_token = os.getenv("HF_TOKEN")
 if hf_token:
     try:
         login(token=hf_token, add_to_git_credential=False)

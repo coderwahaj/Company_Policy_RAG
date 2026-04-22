@@ -8,8 +8,9 @@ from backend.app.core.rag_service import run_rag_stream, truncate_context
 
 router = APIRouter()
 
-def sever_sent_events(event: str, data: dict) -> str:
-    return f"event: {event}\n" + f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+def format_sse(event: str, data: dict) -> str:
+    payload = json.dumps(data, ensure_ascii=False)
+    return f"event: {event}\ndata: {payload}\n\n"
 
 @router.post("/chat/stream")
 def chat_stream(payload: ChatRequest):
@@ -18,7 +19,7 @@ def chat_stream(payload: ChatRequest):
     def generate() -> Iterator[str]:
         try:
             #metadata event
-            yield sever_sent_events("meta", {"provider": provider})
+            yield format_sse("meta", {"provider": provider})
 
             embedder, vector_store, llm, reranker, bm25, _ = get_pipeline(provider)
 
@@ -32,15 +33,15 @@ def chat_stream(payload: ChatRequest):
                 history=[m.model_dump() for m in (payload.history or [])],
             ):
                 if event == "token":
-                    yield sever_sent_events("token", data)
+                    yield format_sse("token", data)
                 elif event == "done":
                     data["context"] = truncate_context(data.get("context", ""), 600)
-                    yield sever_sent_events("done", data)
+                    yield format_sse("done", data)
                 elif event == "error":
-                    yield sever_sent_events("error", data)
+                    yield format_sse("error", data)
 
         except Exception as e:
-            yield sever_sent_events("error", {"message": str(e)})
+            yield format_sse("error", {"message": str(e)})
 
     return StreamingResponse(
         generate(),

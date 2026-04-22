@@ -20,22 +20,22 @@ _PIPELINE_CACHE = {}
 def compute_data_fingerprint(root_dir: str):
     import hashlib
 
-    hash = hashlib.sha1()
+    data_hash = hashlib.sha1()
     if not os.path.exists(root_dir):
         return None
 
     for dirpath, _, filenames in os.walk(root_dir):
         for fn in sorted(filenames):
-            fp = os.path.join(dirpath, fn)
+            finger_print = os.path.join(dirpath, fn)
             try:
-                s = os.stat(fp)
+                s = os.stat(finger_print)
             except OSError:
                 continue
-            hash.update(fp.replace("\\", "/").encode())
-            hash.update(str(s.st_size).encode())
-            hash.update(str(int(s.st_mtime)).encode())
+            data_hash.update(finger_print.replace("\\", "/").encode())
+            data_hash.update(str(s.st_size).encode())
+            data_hash.update(str(int(s.st_mtime)).encode())
 
-    return hash.hexdigest()
+    return data_hash.hexdigest()
 
 
 def save_pipeline(vs, chunk_count, data_fingerprint: str):
@@ -59,8 +59,8 @@ def load_pipeline(data_root="data/policy"):
     with open(PIPELINE_MANIFEST, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    current_fp = compute_data_fingerprint(data_root)
-    if manifest.get("fingerprint") != current_fp:
+    current_fingerprint = compute_data_fingerprint(data_root)
+    if manifest.get("fingerprint") != current_fingerprint:
         return None
 
     if not os.path.exists(manifest.get("index_file", "")) or not os.path.exists(
@@ -110,16 +110,16 @@ def _build_pipeline(provider: str, data_root="data/policy"):
         else (len(embeddings[0]) if has_rows else 768)
     )
 
-    vs = FAISSVectorStore(dimension)
+    vector_store = FAISSVectorStore(dimension)
     if has_rows:
-        vs.add_embeddings(embeddings, texts, metadatas)
+        vector_store.add_embeddings(embeddings, texts, metadatas)
 
     bm25 = BM25Retriever(texts)
-    fp = compute_data_fingerprint(data_root)
-    save_pipeline(vs, texts, bm25, len(texts), fp)
-
+    data_fingerprint = compute_data_fingerprint(data_root)
+    # save_pipeline(vector_store, texts, bm25, len(texts), data_fingerprint)
+    save_pipeline(vector_store, len(texts), data_fingerprint)
     llm = get_llm(provider)
-    return embedder, vs, llm, Reranker(), bm25, len(texts)
+    return embedder, vector_store, llm, Reranker(), bm25, len(texts)
 
 
 def get_pipeline(provider: str = "groq", data_root="data/policy"):
@@ -136,13 +136,14 @@ def get_pipeline(provider: str = "groq", data_root="data/policy"):
 
 # Added helpers for API routes
 
+
 def reset_pipeline(provider: str = "groq", data_root="data/policy"):
     """
     Remove cached pipeline for current provider + current data fingerprint.
     Keeps persisted FAISS files on disk.
     """
-    fp = compute_data_fingerprint(data_root)
-    key = (provider, fp)
+    data_fingerprint = compute_data_fingerprint(data_root)
+    key = (provider, data_fingerprint)
 
     with _PIPELINE_LOCK:
         _PIPELINE_CACHE.pop(key, None)
@@ -154,8 +155,8 @@ def pipeline_status(provider: str = "groq", data_root="data/policy"):
       1) in-memory cache
       2) persisted manifest (if fingerprint matches)
     """
-    fp = compute_data_fingerprint(data_root)
-    key = (provider, fp)
+    data_fingerprint = compute_data_fingerprint(data_root)
+    key = (provider, data_fingerprint)
 
     with _PIPELINE_LOCK:
         cached = _PIPELINE_CACHE.get(key)

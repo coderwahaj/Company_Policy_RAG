@@ -3,6 +3,7 @@
 Usage: from llm import get_llm; llm = get_llm()
 Set `LLM_PROVIDER` env var to `groq` or `openai` (default: groq).
 """
+
 import os
 from dotenv import load_dotenv
 
@@ -17,19 +18,23 @@ def get_llm(provider: str | None = None):
       - `get_llm()` reads `LLM_PROVIDER` (defaults to `groq`)
       - `get_llm('openai')` returns an OpenAI-backed instance
     """
-    prov = (provider or os.getenv("LLM_PROVIDER", "groq")).lower()
+    provider = (provider or os.getenv("LLM_PROVIDER", "groq")).lower()
 
-    if prov in ("groq", "grog"):
+    if provider in ("groq", "grog"):
         return get_groq()
-    if prov in ("gemini", "google"):
+    if provider in ("gemini", "google"):
         return get_gemini()
-    raise ValueError(f"Unknown LLM provider: {prov}")
+    raise ValueError(f"Unknown LLM provider: {provider}")
+
 
 def get_groq():
     """Return a Groq LLM instance."""
     from .groq_llm import GroqLLM
 
     return GroqLLM()
+
+
 def get_gemini():
     from .gemini_llm import GeminiLLM
+
     return GeminiLLM()
