@@ -56,14 +56,25 @@ export default function Sidebar({
 
         {!collapsed ? (
           <>
-            {/* Model select */}
-            <div className="mb-4">
+            
+            {/* Model Badge - Groq only */}
+<div className="mb-4">
+  <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">
+    Model
+  </label>
+
+  <div className="rounded-xl border border-cyan-300/30 bg-gradient-to-r from-cyan-300/10 to-violet-300/10 px-4 py-3">
+    <p className="text-sm font-semibold text-cyan-200">Groq</p>
+  </div>
+</div>
+{/* Model select */}
+            {/* <div className="mb-4">
               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">
                 Choose Model
               </label>
 
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/15 bg-black/30 p-1">
-                {["groq", "gemini"].map((m) => {
+                {["groq", "qwen"].map((m) => {
                   const active = provider === m;
                   return (
                     <button
@@ -79,12 +90,12 @@ export default function Sidebar({
                         "disabled:cursor-not-allowed disabled:opacity-60",
                       ].join(" ")}
                     >
-                      {m === "groq" ? "Groq" : "Gemini"}
+                      {m === "groq" ? "Groq" : "Qwen"}
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </div> */}
 
             {/* Action buttons */}
             <div className="mb-4 flex flex-wrap gap-2">

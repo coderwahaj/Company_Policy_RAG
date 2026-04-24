@@ -69,7 +69,7 @@ useEffect(() => {
   }, [provider]);
 
   const titleProvider = useMemo(
-    () => (provider === "groq" ? "Groq" : "Gemini"),
+    () => (provider === "groq" ? "Groq" : "Qwen"),
     [provider]
   );
 

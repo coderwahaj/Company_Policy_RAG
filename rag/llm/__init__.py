@@ -22,8 +22,9 @@ def get_llm(provider: str | None = None):
 
     if provider in ("groq", "grog"):
         return get_groq()
-    if provider in ("gemini", "google"):
-        return get_gemini()
+    if provider == "qwen":
+       from .qwen_llm import QwenLLM
+       return QwenLLM()
     raise ValueError(f"Unknown LLM provider: {provider}")
 
 
@@ -34,7 +35,8 @@ def get_groq():
     return GroqLLM()
 
 
-def get_gemini():
-    from .gemini_llm import GeminiLLM
+# def get_gemini():
+#     from .gemini_llm import GeminiLLM
 
-    return GeminiLLM()
+#     return GeminiLLM()
+
