@@ -123,7 +123,6 @@ export default function ChatPage() {
       block: "end",
     });
   }, [messages, streaming]);
-const inputRef = useRef(null);
 
 useEffect(() => {
   if (!streaming && pipelineReady) {
