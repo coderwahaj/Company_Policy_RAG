@@ -2,8 +2,7 @@ import pytest
 import json
 import os
 import tempfile
-from unittest.mock import Mock, patch, MagicMock
-import hashlib
+from unittest.mock import Mock, patch
 
 
 class TestComputeDataFingerprint:
@@ -69,19 +68,19 @@ class TestSavePipeline:
         """Test save_pipeline creates vector_store directory"""
         from backend.app.core.pipeline import save_pipeline
         
-        vs = Mock()
-        vs.save = Mock()
+        vector_store = Mock()
+        vector_store.save = Mock()
         
-        save_pipeline(vs, 42, "fingerprint123")
+        save_pipeline(vector_store, 42, "fingerprint123")
         mock_makedirs.assert_called_once_with("vector_store", exist_ok=True)
 
     @patch("backend.app.core.pipeline.os.makedirs")
-    def test_save_pipeline_saves_vector_store(self, mock_makedirs):
+    def test_save_pipeline_saves_vector_store(self):
         """Test save_pipeline calls vector store save"""
         from backend.app.core.pipeline import save_pipeline
         
-        vs = Mock()
-        vs.save = Mock()
+        vector_store = Mock()
+        vector_store.save = Mock()
         
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("backend.app.core.pipeline.PIPELINE_INDEX_FILE", 
@@ -90,16 +89,16 @@ class TestSavePipeline:
                           os.path.join(tmpdir, "docstore.pkl")):
                     with patch("backend.app.core.pipeline.PIPELINE_MANIFEST",
                               os.path.join(tmpdir, "manifest.json")):
-                        save_pipeline(vs, 42, "fingerprint123")
-                        vs.save.assert_called_once()
+                        save_pipeline(vector_store, 42, "fingerprint123")
+                        vector_store.save.assert_called_once()
 
     @patch("backend.app.core.pipeline.os.makedirs")
     def test_save_pipeline_manifest_content(self, mock_makedirs):
         """Test save_pipeline creates valid manifest"""
         from backend.app.core.pipeline import save_pipeline
         
-        vs = Mock()
-        vs.save = Mock()
+        vector_store = Mock()
+        vector_store.save = Mock()
         
         with tempfile.TemporaryDirectory() as tmpdir:
             manifest_file = os.path.join(tmpdir, "manifest.json")
@@ -107,7 +106,7 @@ class TestSavePipeline:
             with patch("backend.app.core.pipeline.PIPELINE_INDEX_FILE", "test.index"):
                 with patch("backend.app.core.pipeline.PIPELINE_DOCSTORE_FILE", "test.pkl"):
                     with patch("backend.app.core.pipeline.PIPELINE_MANIFEST", manifest_file):
-                        save_pipeline(vs, 42, "fp123")
+                        save_pipeline(vector_store, 42, "fp123")
                         
                         # Verify manifest file was created
                         assert os.path.exists(manifest_file)

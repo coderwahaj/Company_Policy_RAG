@@ -160,12 +160,10 @@ useEffect(() => {
                     Company Policy Chat
                   </h1>
                   <p className="truncate text-xs md:text-sm text-slate-400">
-                    Grounded answers with citations • Model: {titleProvider}
-                  </p>
+  Ask anything about Wamo Labs policies — leave, contracts, HR rules & more
+</p>
                 </div>
-                <div className="shrink-0 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-200">
-                  {pipelineReady ? "Pipeline Loaded" : "Pipeline Not Loaded"}
-                </div>
+                
               </header>
 
               <div className="min-h-0 flex-1 overflow-y-auto scroll-on-hover px-3 py-4 md:px-6">

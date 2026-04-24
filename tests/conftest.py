@@ -78,7 +78,7 @@ def temp_pdf_dir():
 def mock_embedder():
     """Mock embedder for testing"""
     embedder = Mock()
-    embedder.embed_texts = Mock(return_value=np.random.randn(4, 1024).astype("float32"))
+    embedder.embed_texts = Mock(return_value=np.random.randn(4,1024).astype("float32"))
     embedder.embed_query = Mock(return_value=np.random.randn(1024).astype("float32"))
     return embedder
 
@@ -86,8 +86,8 @@ def mock_embedder():
 @pytest.fixture
 def mock_vector_store():
     """Mock vector store for testing"""
-    vs = Mock()
-    vs.search = Mock(return_value=[
+    vector_store = Mock()
+    vector_store.search = Mock(return_value=[
         {
             "text": "Employees get 20 leave days per year",
             "metadata": {"file_name": "leave_policy.pdf", "page": 1, "doc_type": "leave_policy"},
@@ -99,10 +99,10 @@ def mock_vector_store():
             "score": 0.87
         }
     ])
-    vs.add_embeddings = Mock()
-    vs.save = Mock()
-    vs.load = Mock()
-    return vs
+    vector_store.add_embeddings = Mock()
+    vector_store.save = Mock()
+    vector_store.load = Mock()
+    return vector_store
 
 
 @pytest.fixture

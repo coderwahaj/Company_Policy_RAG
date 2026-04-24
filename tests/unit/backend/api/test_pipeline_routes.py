@@ -77,7 +77,7 @@ class TestResetPipelineRoute:
     """Test pipeline reset endpoint"""
 
     @patch("backend.app.api.pipeline_routes.reset_pipeline")
-    def test_reset_pipeline_success(self, mock_reset, client):
+    def test_reset_pipeline_success(self, client):
         """Test POST /pipeline/reset success"""
         try:
             response = client.post("/pipeline/reset", json={"provider": "groq"})

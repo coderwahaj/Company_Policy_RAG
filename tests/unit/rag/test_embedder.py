@@ -36,7 +36,7 @@ class TestTextEmbedding:
         
         # Should be (num_texts, embedding_dim)
         assert embeddings.shape[0] == len(sample_texts)
-        assert embeddings.shape[1] == 1024  # bge-large dimension
+        assert embeddings.shape[1] == 1024 
 
     def test_embed_texts_float32_dtype(self, sample_texts):
         """Test that embeddings are float32"""
