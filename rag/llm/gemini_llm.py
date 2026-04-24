@@ -53,3 +53,80 @@ class GeminiLLM:
             prompt, generation_config={"temperature": 0.3, "max_output_tokens": 300}
         )
         return response.text.strip()
+
+    def generate_stream(self, query, context="", casual=False, fallback=False):
+        # Build prompt (same as generate)
+        if casual:
+            prompt = f"""You are a friendly assistant handling casual greetings.
+
+        RULES:
+        - Be warm and brief (1–2 lines)
+        - Only respond to: greetings, thanks, farewells
+        - Do NOT try to answer questions
+        - Do NOT answer policy questions
+        - Respond naturally
+
+        User: {query}
+        Assistant:"""
+        elif fallback:
+            prompt = f"""You are Wamo Labs Policy Assistant.
+
+            STRICT RULE: This is a fallback - always refuse and redirect.
+            Say EXACTLY: "I'm the Wamo Labs Company Policy Assistant. I don't have information about that in the policy documents. I can help with: leave policies, employment contracts, compensation, and benefits."
+
+            User: {query}
+            Assistant:"""
+        else:
+            prompt = f"""You are Wamo Labs Company Policy Assistant.
+
+            CRITICAL RULES:
+            1. If the context contains an answer to the user's question, provide it directly and clearly
+            2. Do NOT refuse to answer if the answer is in the context
+            3. If the question is about something NOT covered in the policy documents AND not in the context, then refuse:
+            Say EXACTLY: "I'm the Wamo Labs Company Policy Assistant. I don't have information about that in the policy documents. I can help with: leave policies, employment contracts, compensation, and benefits."
+            4. Do NOT hallucinate or invent information beyond the context
+            5. Be structured and clear
+
+            CONTEXT:
+            {context}
+
+            User Question: {query}
+            Assistant:"""
+
+        try:
+            stream = self.client.chat.completions.create(
+                model="gemini-1.5-flash-8b",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=300,
+                stream=True,
+            )
+
+            count = 0
+            for chunk in stream:
+                if count < 3:
+                    print("DEBUG STREAM CHUNK:", chunk)
+                    count += 1
+                # --- Try a few known locations for delta text ---
+                delta = None
+
+                try:
+                    c0 = chunk.choices[0]
+
+                    # Most common in streaming:
+                    if getattr(c0, "delta", None) is not None:
+                        delta = getattr(c0.delta, "content", None)
+
+                    # Sometimes SDK uses message even in stream:
+                    if not delta and getattr(c0, "message", None) is not None:
+                        delta = getattr(c0.message, "content", None)
+
+                except Exception:
+                    delta = None
+
+                if delta:
+                    yield delta
+
+        except Exception as e:
+            print(f"Error in generate_stream: {e}")
+            return
