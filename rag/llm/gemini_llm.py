@@ -9,7 +9,7 @@ class GeminiLLM:
             raise EnvironmentError("GEMINI_API_KEY not found")
 
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-2.0-flash-lite")
+        self.model = genai.GenerativeModel("gemini-1.5-flash-8b")
 
     def generate_raw(self, prompt):
         response = self.model.generate_content(
