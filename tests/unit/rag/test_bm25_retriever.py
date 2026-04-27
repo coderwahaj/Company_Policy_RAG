@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 from rag.retriever.bm25_retriever import BM25Retriever
  
@@ -46,7 +45,7 @@ class TestBM25Search:
             results = retriever.search("leave", k=k)
             assert len(results) <= k
  
-    def test_search_exact_match_ranked_high(self, sample_texts):
+    def test_search_exact_match_rankpytested_high(self, sample_texts):
         """Test that exact matches are ranked high"""
         retriever = BM25Retriever(sample_texts)
         results = retriever.search("leave days", k=5)

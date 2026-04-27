@@ -1,9 +1,4 @@
 # tests/unit/test_loader.py
-
-import pytest
-import os
-import tempfile
-from pathlib import Path
 from rag.ingestion.loader import clean_text
 
 

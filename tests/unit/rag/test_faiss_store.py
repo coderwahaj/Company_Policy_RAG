@@ -1,6 +1,4 @@
-import tempfile
 import os
-import pickle
 from rag.vectorstore.faiss_store import FAISSVectorStore
 import numpy as np
 

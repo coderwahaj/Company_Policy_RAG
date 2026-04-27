@@ -6,9 +6,9 @@ from pydantic import BaseModel, ConfigDict
 
 class PipelineRequest(BaseModel):
     """Test PipelineRequest schema validation"""
-
     model_config = ConfigDict(frozen=True)  # Make immutable
     provider: str = "groq"
+    
 
     def test_pipeline_request_default_provider(self):
         """Test PipelineRequest uses default provider 'groq'"""
@@ -187,7 +187,7 @@ class PipelineRequest(BaseModel):
         """Test multiple PipelineRequest instances are independent"""
         req1 = PipelineRequest(provider="groq")
         req2 = PipelineRequest(provider="gemini")
-
+        
         assert req1.provider == "groq"
         assert req2.provider == "gemini"
         assert req1.provider != req2.provider
@@ -196,22 +196,22 @@ class PipelineRequest(BaseModel):
         """Test default provider is consistent across instances"""
         req1 = PipelineRequest()
         req2 = PipelineRequest()
-
+        
         assert req1.provider == req2.provider == "groq"
 
     def test_pipeline_request_modification_not_allowed(self):
         """Test PipelineRequest fields cannot be modified after creation"""
         from pydantic import ValidationError
-
+        
         req = PipelineRequest(provider="groq")
-
+        
         with pytest.raises(ValidationError):
             req.provider = "gemini"
 
     def test_pipeline_request_schema_properties(self):
         """Test PipelineRequest schema has correct structure"""
         schema = PipelineRequest.model_json_schema()
-
+        
         assert "properties" in schema
         assert "provider" in schema["properties"]
         assert schema["properties"]["provider"]["type"] == "string"
@@ -226,7 +226,7 @@ class PipelineRequest(BaseModel):
     def test_pipeline_request_all_llm_providers(self):
         """Test PipelineRequest with common LLM providers"""
         providers = ["groq", "gemini", "qwen", "openai", "anthropic", "llama"]
-
+        
         for provider in providers:
             req = PipelineRequest(provider=provider)
             assert req.provider == provider

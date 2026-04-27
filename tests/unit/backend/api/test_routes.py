@@ -9,11 +9,7 @@ def client():
     try:
         from backend.app.main import app
     except ModuleNotFoundError:
-        try:
-            from backend.main import app
-        except ModuleNotFoundError:
-            from fastapi import FastAPI
-            app = FastAPI()
+        app = FastAPI()
     
     return TestClient(app)
 

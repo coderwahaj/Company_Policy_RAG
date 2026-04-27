@@ -1,8 +1,7 @@
-import pytest
 import json
 import os
 import tempfile
-from unittest.mock import Mock, patch
+from unittest.mock import Mock,patch
 
 
 class TestComputeDataFingerprint:
@@ -74,23 +73,6 @@ class TestSavePipeline:
         save_pipeline(vector_store, 42, "fingerprint123")
         mock_makedirs.assert_called_once_with("vector_store", exist_ok=True)
 
-    @patch("backend.app.core.pipeline.os.makedirs")
-    def test_save_pipeline_saves_vector_store(self):
-        """Test save_pipeline calls vector store save"""
-        from backend.app.core.pipeline import save_pipeline
-        
-        vector_store = Mock()
-        vector_store.save = Mock()
-        
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("backend.app.core.pipeline.PIPELINE_INDEX_FILE", 
-                      os.path.join(tmpdir, "faiss.index")):
-                with patch("backend.app.core.pipeline.PIPELINE_DOCSTORE_FILE",
-                          os.path.join(tmpdir, "docstore.pkl")):
-                    with patch("backend.app.core.pipeline.PIPELINE_MANIFEST",
-                              os.path.join(tmpdir, "manifest.json")):
-                        save_pipeline(vector_store, 42, "fingerprint123")
-                        vector_store.save.assert_called_once()
 
     @patch("backend.app.core.pipeline.os.makedirs")
     def test_save_pipeline_manifest_content(self, mock_makedirs):

@@ -1,8 +1,7 @@
 import pytest
 import tempfile
 import numpy as np
-from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 # SAMPLE DATA FIXTURES
 

@@ -2,7 +2,6 @@ import pytest
 from pydantic import ValidationError
 from backend.app.models.chat_schemas import Message, ChatRequest, ChatResponse
 
-
 class TestMessage:
     """Test Message schema validation"""
 

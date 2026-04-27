@@ -3,18 +3,13 @@ import json
 from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
 
-
 @pytest.fixture
 def client():
     """FastAPI test client"""
     try:
         from backend.app.main import app
     except ModuleNotFoundError:
-        try:
-            from backend.main import app
-        except ModuleNotFoundError:
-            from fastapi import FastAPI
-            app = FastAPI()
+        app = FastAPI()
     
     return TestClient(app)
 

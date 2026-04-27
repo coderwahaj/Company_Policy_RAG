@@ -1,25 +1,3 @@
-# FROM python:3.12-slim
-
-# WORKDIR /app
-
-# ENV PYTHONDONTWRITEBYTECODE=1
-# ENV PYTHONUNBUFFERED=1
-
-# RUN apt-get update && apt-get install -y \
-#     git \
-#     && rm -rf /var/lib/apt/lists/*
-
-# COPY ./requirements.txt ./requirements.txt
-
-# RUN pip install --upgrade pip && \
-#     pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
-
-# COPY backend ./backend
-# COPY rag ./rag
-# COPY data ./data
-# EXPOSE 8000
-
-# CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 FROM python:3.11-slim
 
 WORKDIR /app
